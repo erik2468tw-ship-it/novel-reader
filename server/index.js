@@ -23,6 +23,10 @@ app.use(cors());
 app.use(compression());
 app.use(express.json());
 
+// 靜態檔案服務（前端）
+app.use(express.static(join(ROOT, 'dist')));
+app.use(express.static(join(ROOT, 'public')));
+
 // 確保目錄存在
 if (!fs.existsSync(NOVELS_DIR)) {
     fs.mkdirSync(NOVELS_DIR, { recursive: true });

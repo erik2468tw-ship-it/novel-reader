@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 固定路徑設定
-const ROOT = 'G:/SoftwareDev/novel-scraper-v2';
+const ROOT = 'G:/SoftwareDev/novel-reader';
 const BACKUP_DIR = path.join(ROOT, 'novels');
 
 // 確保備份目錄存在
@@ -247,6 +247,22 @@ async function getChapterContent(page, chapterUrl) {
     return null;
 }
 
+// 更新小說 metadata（書名、作者、分類、介紹）
+function updateNovelMetadata(novelId, metadata) {
+    const novels = getNovelList();
+    const novel = novels.find(n => n.novelId === novelId);
+    if (novel) {
+        novel.title = metadata.title || novel.title;
+        novel.author = metadata.author || '';
+        novel.category = metadata.category || '';
+        novel.description = metadata.description || '';
+        novel.coverUrl = metadata.coverUrl || '';
+        novel.updatedAt = new Date().toISOString();
+        saveNovelList(novels);
+        log(`更新 metadata 完成: ${novel.title}`);
+    }
+}
+
 // 主工作流程
 async function scrapeNovel(novel) {
     log(`開始下載: ${novel.title} (ID: ${novel.novelId})`);
@@ -264,6 +280,12 @@ async function scrapeNovel(novel) {
         });
         const page = await context.newPage();
         page.setDefaultTimeout(30000);
+        
+        // 先抓取 metadata
+        const metadata = await getNovelMetadata(page, novel.url);
+        if (metadata.title) {
+            updateNovelMetadata(novel.novelId, metadata);
+        }
         
         const chapters = await getChapterUrls(page, novel.url);
         if (chapters.length === 0) {
