@@ -1,5 +1,6 @@
 // API Service for Novel Reader
-const API_BASE = 'http://100.64.100.6:3002'
+// 整合後的 API - 使用相對路徑（同一 server）
+const API_BASE = ''
 
 export const api = {
   // 取得小說列表
@@ -62,6 +63,20 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/scrape/${id}/sync`, {
       method: 'POST'
     })
+    return res.json()
+  },
+
+  // 重新整理章節（修補標題 + 增量更新）
+  async refreshNovel(id) {
+    const res = await fetch(`${API_BASE}/api/scrape/${id}/refresh`, {
+      method: 'POST'
+    })
+    return res.json()
+  },
+
+  // 取得小說詳細資訊
+  async getNovelInfo(id) {
+    const res = await fetch(`${API_BASE}/api/novels/${id}/info`)
     return res.json()
   },
 
