@@ -12,7 +12,7 @@ const loading = ref(false)
 const error = ref('')
 
 // 字體大小
-const fontSize = ref(16)
+const fontSize = ref(18)
 
 // 主題
 const { isDark, toggleDarkMode, initTheme } = useTheme()
@@ -23,18 +23,55 @@ const { getProgress, saveProgress, getBookmarks, addBookmark, removeBookmark } =
 // 小說列表
 const novels = ref([])
 const searchQuery = ref('')
-const filter = ref('all')
+const selectedTag = ref('')
+const sortOrder = ref('asc') // 章節排序：asc 正序, desc 倒序
 
+// 取得所有分類標籤
+const allTags = computed(() => {
+  const tags = new Set()
+  novels.value.forEach(n => {
+    if (n.category) {
+      n.category.split(/[,，]/).forEach(t => tags.add(t.trim()))
+    }
+  })
+  return [...tags].sort()
+})
+
+// 排序後的章節列表
+const sortedChapters = computed(() => {
+  const sorted = [...chapters.value]
+  if (sortOrder.value === 'desc') {
+    sorted.sort((a, b) => b.chapter_number - a.chapter_number)
+  } else {
+    sorted.sort((a, b) => a.chapter_number - b.chapter_number)
+  }
+  return sorted
+})
+
+// 最新章節（取前10個）
+const latestChapters = computed(() => {
+  return sortedChapters.value.slice(0, 10)
+})
+
+// 過濾後的小說列表
 const filteredNovels = computed(() => {
   let result = novels.value
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(n => n.title?.toLowerCase().includes(q) || n.author?.toLowerCase().includes(q))
   }
-  if (filter.value !== 'all') {
-    result = result.filter(n => n.status === filter.value)
+  if (selectedTag.value) {
+    result = result.filter(n => n.category?.includes(selectedTag.value))
   }
   return result
+})
+
+// 最近更新列表（按 lastSync 排序）
+const recentUpdates = computed(() => {
+  return [...novels.value]
+    .filter(n => n.lastSync)
+    .sort((a, b) => new Date(b.lastSync) - new Date(a.lastSync))
+    .slice(0, 10)
 })
 
 async function loadNovels() {
@@ -95,6 +132,70 @@ function openDeleteDialog(novel) {
   deletePassword.value = ''
   showDeleteDialog.value = true
 }
+
+// Worker 控制
+const workerEnabled = ref(true)
+const tasks = ref([])
+const showTasksDialog = ref(false)
+const taskPassword = ref('')
+const taskToDelete = ref(null)
+
+async function loadWorkerStatus() {
+  try {
+    const status = await api.getWorkerStatus()
+    workerEnabled.value = status.enabled
+  } catch (e) {
+    console.error('取得 Worker 狀態失敗:', e)
+  }
+}
+
+async function toggleWorker() {
+  try {
+    if (workerEnabled.value) {
+      await api.stopWorker()
+      workerEnabled.value = false
+    } else {
+      await api.startWorker()
+      workerEnabled.value = true
+    }
+  } catch (e) {
+    console.error('切換 Worker 狀態失敗:', e)
+  }
+}
+
+async function loadTasks() {
+  try {
+    const data = await api.getTasks()
+    tasks.value = data.tasks || []
+    workerEnabled.value = data.workerEnabled
+  } catch (e) {
+    console.error('取得任務失敗:', e)
+  }
+}
+
+async function confirmDeleteTask() {
+  if (!taskPassword.value || !taskToDelete.value) return
+  deleting.value = true
+  try {
+    await api.deleteTask(taskToDelete.value.id, taskPassword.value)
+    showTasksDialog.value = false
+    taskPassword.value = ''
+    taskToDelete.value = null
+    await loadTasks()
+    await loadNovels()
+  } catch (e) {
+    error.value = '刪除失敗：' + e.message
+  }
+  deleting.value = false
+}
+
+function openTaskDeleteDialog(task) {
+  taskToDelete.value = task
+  taskPassword.value = ''
+}
+
+// 初始載入 Worker 狀態
+loadWorkerStatus()
 
 async function viewNovel(novel) {
   currentNovel.value = novel
@@ -250,24 +351,31 @@ watch(currentChapter, (chapter) => {
 
 <template>
   <div class="app" :class="{ dark: isDark }">
+    <!-- Header -->
     <header class="header">
       <button v-if="currentView !== 'home'" @click="goBack" class="back-btn ripple">← 返回</button>
-      <h1>📚 小說閱讀器</h1>
+      <h1 v-if="currentView === 'home'">📚 小說閱讀器</h1>
+      <h1 v-else-if="currentView === 'detail'">{{ currentNovel?.title }}</h1>
+      <h1 v-else>第{{ currentChapter?.chapter_number }}章</h1>
       <div class="header-actions">
+        <button v-if="currentView === 'home'" @click="showTasksDialog = true; loadTasks()" class="tasks-btn ripple" title="任務管理">📋</button>
         <button v-if="currentView === 'home'" @click="showAddDialog = true" class="add-btn ripple">+ 新增</button>
+        <button @click="toggleWorker" class="worker-btn ripple" :class="{ active: workerEnabled }" :title="workerEnabled ? '爬蟲運行中' : '爬蟲已停止'">
+          {{ workerEnabled ? '🟢' : '🔴' }}
+        </button>
         <button @click="toggleDarkMode" class="theme-btn ripple">{{ isDark ? '☀️' : '🌙' }}</button>
       </div>
     </header>
 
-    <!-- 搜尋列 -->
-    <div v-if="currentView === 'home'" class="search-bar">
-      <input v-model="searchQuery" placeholder="搜尋小說..." class="search-input">
-      <select v-model="filter" class="filter-select">
-        <option value="all">全部</option>
-        <option value="pending">等待中</option>
-        <option value="scraping">下載中</option>
-        <option value="completed">已完成</option>
-      </select>
+    <!-- 搜尋列（首頁） -->
+    <div v-if="currentView === 'home'" class="search-section">
+      <div class="search-bar">
+        <input v-model="searchQuery" placeholder="🔍 搜尋書名或作者..." class="search-input">
+        <select v-model="selectedTag" class="filter-select">
+          <option value="">全部分類</option>
+          <option v-for="tag in allTags" :key="tag" :value="tag">{{ tag }}</option>
+        </select>
+      </div>
     </div>
 
     <!-- 錯誤 -->
@@ -288,99 +396,230 @@ watch(currentChapter, (chapter) => {
     </div>
 
     <!-- 首頁 -->
+    <Transition name="fade" mode="out-in">
     <main v-if="currentView === 'home' && !loading" class="home">
+      <div class="main-layout">
+        <div class="main-content">
+          <!-- 精品推薦 -->
+          <section v-if="filteredNovels.length > 0" class="featured-section">
+            <h2 class="section-title">📚 精品推薦</h2>
+            <div class="featured-grid">
+              <div 
+                v-for="novel in filteredNovels.slice(0, 8)" 
+                :key="novel.id" 
+                class="featured-card ripple"
+                @click="viewNovel(novel)"
+              >
+                <div class="featured-cover">
+                  <img v-if="novel.coverUrl" :src="novel.coverUrl" alt="cover" loading="lazy">
+                  <div v-else class="no-cover">📖</div>
+                </div>
+                <div class="featured-info">
+                  <h4>{{ novel.title }}</h4>
+                  <p>{{ novel.author || '未知作者' }}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 熱門標籤 -->
+          <section v-if="allTags.length > 0" class="tags-section">
+            <h2 class="section-title">🏷️ 熱門標籤</h2>
+            <div class="tags-cloud">
+              <button 
+                v-for="tag in allTags" 
+                :key="tag" 
+                class="tag-item ripple"
+                :class="{ active: selectedTag === tag }"
+                @click="selectedTag = selectedTag === tag ? '' : tag"
+              >
+                {{ tag }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 本週強推 -->
+          <section v-if="recentUpdates.length > 0" class="weekly-section">
+            <h2 class="section-title">🔥 本週強推</h2>
+            <div class="weekly-grid">
+              <div 
+                v-for="novel in recentUpdates.slice(0, 4)" 
+                :key="novel.id" 
+                class="weekly-card ripple"
+                @click="viewNovel(novel)"
+              >
+                <div class="weekly-cover">
+                  <img v-if="novel.coverUrl" :src="novel.coverUrl" alt="cover" loading="lazy">
+                  <div v-else class="no-cover">📖</div>
+                </div>
+                <div class="weekly-content">
+                  <h4>{{ novel.title }}</h4>
+                  <p class="weekly-desc">{{ novel.description?.substring(0, 60) }}...</p>
+                  <p class="weekly-author">📝 {{ novel.author || '未知作者' }}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 最近更新 -->
+          <section v-if="recentUpdates.length > 0" class="updates-section">
+            <h2 class="section-title">🕐 最近更新</h2>
+            <div class="update-list">
+              <div 
+                v-for="novel in recentUpdates.slice(0, 12)" 
+                :key="novel.id" 
+                class="update-item ripple"
+                @click="viewNovel(novel)"
+              >
+                <span class="update-cat">{{ novel.category?.split(',')[0] || '其他' }}</span>
+                <span class="update-title">{{ novel.title }}</span>
+                <span class="update-author">{{ novel.author }}</span>
+                <span class="update-time">{{ formatDate(novel.lastSync) }}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- 側邊欄 -->
+        <aside class="sidebar">
+          <h3 class="sidebar-title">📊 網友都在看</h3>
+          <div class="sidebar-list">
+            <div 
+              v-for="(novel, idx) in recentUpdates.slice(0, 10)" 
+              :key="novel.id" 
+              class="sidebar-item ripple"
+              @click="viewNovel(novel)"
+            >
+              <span class="sidebar-rank">{{ idx + 1 }}</span>
+              <div class="sidebar-info">
+                <span class="sidebar-book-title">{{ novel.title }}</span>
+                <span class="sidebar-author">{{ novel.author }}</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- 無小說時顯示 -->
       <div v-if="filteredNovels.length === 0" class="empty">
         <div class="empty-icon">📚</div>
-        <p>還沒有小說</p>
-        <button @click="showAddDialog = true" class="add-btn ripple">新增第一本小說</button>
-      </div>
-      <div class="novel-grid">
-        <div v-for="novel in filteredNovels" :key="novel.id" class="novel-card ripple" @click="viewNovel(novel)">
-          <div class="novel-cover">
-            <img v-if="novel.coverUrl" :src="novel.coverUrl" alt="cover" loading="lazy">
-            <div v-else class="no-cover">📖</div>
-            <div v-if="novel.status === 'scraping'" class="scraping-overlay">
-              <div class="spinner"></div>
-            </div>
-          </div>
-          <div class="novel-info">
-            <h3>{{ novel.title }}</h3>
-            <p v-if="novel.author" class="author">{{ novel.author }}</p>
-            <div class="novel-meta">
-              <span class="status" :class="novel.status">{{ formatStatus(novel.status) }}</span>
-              <span v-if="novel.totalChapters" class="chapter-count">{{ novel.totalChapters }}章</span>
-            </div>
-            <div v-if="novel.status === 'completed'" class="progress-bar">
-              <div class="progress-fill"></div>
-            </div>
-          </div>
-          <button class="delete-btn ripple" @click.stop="openDeleteDialog(novel)">🗑️</button>
-        </div>
+        <p>書架是空的，趕快加入心儀的書籍吧！</p>
+        <button @click="showAddDialog = true" class="add-btn ripple">新增一本小說</button>
       </div>
     </main>
+    </Transition>
 
     <!-- 詳情頁 -->
+    <Transition name="fade" mode="out-in">
     <main v-if="currentView === 'detail'" class="detail">
+      <!-- 麵包屑 -->
+      <nav class="breadcrumb">
+        <span @click="currentView = 'home'" class="breadcrumb-link">首頁</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">{{ currentNovel?.title }}</span>
+      </nav>
+
+      <!-- 小說資訊 -->
       <div class="novel-header">
         <div class="cover">
           <img v-if="currentNovel.coverUrl" :src="currentNovel.coverUrl" alt="cover">
           <div v-else class="no-cover">📖</div>
         </div>
         <div class="info">
-          <h2>{{ currentNovel.title }}</h2>
-          <p v-if="currentNovel.author">作者：{{ currentNovel.author }}</p>
-          <p v-if="currentNovel.category">分類：{{ currentNovel.category }}</p>
+          <h1 class="novel-title">{{ currentNovel.title }}</h1>
+          <p v-if="currentNovel.author" class="novel-author">作者：{{ currentNovel.author }}</p>
+          <p v-if="currentNovel.category" class="novel-category">
+            <span class="category-tag">{{ currentNovel.category.split(',')[0] }}</span>
+          </p>
           <p v-if="currentNovel.description" class="description">{{ currentNovel.description }}</p>
-          <p class="chapter-count">共 {{ chapters.length }} 章</p>
-          <p v-if="currentNovel.lastSync" class="last-sync">最後同步：{{ formatDate(currentNovel.lastSync) }}</p>
+          <div class="novel-stats">
+            <span>章節：{{ chapters.length }}</span>
+            <span v-if="currentNovel.lastSync">更新：{{ formatDate(currentNovel.lastSync) }}</span>
+          </div>
         </div>
       </div>
+
       <div class="detail-actions">
         <button @click="refreshNovel" class="refresh-btn ripple" :disabled="loading">
           🔄 重新整理章節
         </button>
+        <button @click="openDeleteDialog(currentNovel)" class="delete-btn ripple">
+          🗑️ 刪除小說
+        </button>
       </div>
-      <div class="chapter-list">
-        <h3>章節目錄</h3>
-        <div v-if="chapters.length === 0" class="empty-chapters">暫無章節</div>
+
+      <!-- 全部章節 -->
+      <div class="chapter-section">
+        <div class="section-header">
+          <h3 class="section-title">全部章節</h3>
+          <button class="sort-btn ripple" @click="sortOrder = sortOrder === 'desc' ? 'asc' : 'desc'">
+            {{ sortOrder === 'desc' ? '倒序 ↓' : '正序 ↑' }}
+          </button>
+        </div>
         <div class="chapter-grid">
-          <button v-for="(ch, idx) in chapters" :key="ch.id" class="chapter-btn ripple" @click="readChapter(ch)">
-            {{ ch.chapter_number }}. {{ ch.title }}
+          <button 
+            v-for="ch in sortedChapters" 
+            :key="ch.chapter_number" 
+            class="chapter-btn ripple"
+            @click="readChapter(ch)"
+          >
+            <span class="chapter-num">第{{ ch.chapter_number }}章</span>
+            <span class="chapter-title">{{ ch.title }}</span>
           </button>
         </div>
       </div>
     </main>
+    </Transition>
 
     <!-- 閱讀頁 -->
+    <Transition name="fade" mode="out-in">
     <main v-if="currentView === 'reading' && currentChapter" class="reading">
-      <div class="reading-header">
-        <h2>{{ currentChapter.title }}</h2>
-        <div class="reading-actions">
-          <button class="bookmark-btn ripple" @click="toggleBookmark(currentChapter)">
-            {{ getBookmarks(currentNovel?.id)?.some(b => b.chapterId === currentChapter.chapter_number) ? '★' : '☆' }}
-          </button>
-          <select v-model="fontSize" class="font-size-select">
-            <option :value="14">小</option>
-            <option :value="16">中</option>
-            <option :value="18">大</option>
-            <option :value="20">特大</option>
-          </select>
-        </div>
-      </div>
-      <div class="chapter-content" :style="{ fontSize: fontSize + 'px', lineHeight: '1.8' }">
+      <!-- 麵包屑導航 -->
+      <nav class="breadcrumb">
+        <span @click="currentView = 'home'" class="breadcrumb-link">首頁</span>
+        <span class="breadcrumb-sep">›</span>
+        <span @click="currentView = 'detail'" class="breadcrumb-link">{{ currentNovel?.title }}</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">第{{ currentChapter.chapter_number }}章</span>
+      </nav>
+
+      <!-- 章節標題 -->
+      <h1 class="chapter-title">{{ currentChapter.title }}</h1>
+
+      <!-- 內容 -->
+      <div class="chapter-content" :style="{ fontSize: fontSize + 'px', lineHeight: '2' }">
         <div v-if="loading" class="loading-text">載入中...</div>
-        <p v-else>{{ currentChapter.content }}</p>
+        <div v-else class="content-text">{{ currentChapter.content }}</div>
       </div>
+
+      <!-- 字體大小 -->
+      <div class="reading-toolbar">
+        <select v-model="fontSize" class="font-size-select">
+          <option :value="14">小</option>
+          <option :value="16">中</option>
+          <option :value="18">大</option>
+          <option :value="20">特大</option>
+          <option :value="24">超大</option>
+        </select>
+        <button class="bookmark-btn ripple" @click="toggleBookmark(currentChapter)">
+          {{ getBookmarks(currentNovel?.id)?.some(b => b.chapterId === currentChapter.chapter_number) ? '★ 已收藏' : '☆ 收藏' }}
+        </button>
+      </div>
+
+      <!-- 底部導航 -->
       <div class="chapter-nav">
         <button class="nav-btn ripple" @click="prevChapter" :disabled="chapters.findIndex(c => c.chapter_number === currentChapter?.chapter_number) <= 0">
           ← 上一章
         </button>
-        <span class="chapter-indicator">{{ chapters.findIndex(c => c.chapter_number === currentChapter?.chapter_number) + 1 }} / {{ chapters.length }}</span>
+        <button class="nav-btn nav-btn-secondary ripple" @click="currentView = 'detail'">
+          目錄
+        </button>
         <button class="nav-btn ripple" @click="nextChapter" :disabled="chapters.findIndex(c => c.chapter_number === currentChapter?.chapter_number) >= chapters.length - 1">
           下一章 →
         </button>
       </div>
     </main>
+    </Transition>
 
     <!-- 新增對話框 -->
     <div v-if="showAddDialog" class="dialog-overlay" @click.self="showAddDialog = false">
@@ -411,20 +650,80 @@ watch(currentChapter, (chapter) => {
         </div>
       </div>
     </div>
+
+    <!-- 任務管理對話框 -->
+    <div v-if="showTasksDialog" class="dialog-overlay" @click.self="showTasksDialog = false">
+      <div class="dialog tasks-dialog">
+        <div class="tasks-header">
+          <h3>📋 任務管理</h3>
+          <div class="worker-status">
+            <span>爬蟲：</span>
+            <button @click="toggleWorker" class="worker-toggle-btn" :class="{ active: workerEnabled }">
+              {{ workerEnabled ? '🟢 運行中' : '🔴 已停止' }}
+            </button>
+          </div>
+        </div>
+        <div class="tasks-list">
+          <div v-for="task in tasks" :key="task.id" class="task-item">
+            <div class="task-info">
+              <div class="task-title">{{ task.title }}</div>
+              <div class="task-meta">
+                <span :class="'status-' + task.status">{{ task.status }}</span>
+                <span>{{ task.downloadedChapters }}/{{ task.totalChapters }} 章</span>
+              </div>
+            </div>
+            <button @click="openTaskDeleteDialog(task)" class="task-delete-btn ripple">🗑️</button>
+          </div>
+          <div v-if="tasks.length === 0" class="tasks-empty">目前沒有任務</div>
+        </div>
+        <div class="dialog-buttons">
+          <button @click="loadTasks" class="refresh-btn ripple">🔄 重新整理</button>
+          <button @click="showTasksDialog = false" class="cancel-btn ripple">關閉</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任務刪除確認 -->
+    <div v-if="taskToDelete" class="dialog-overlay" @click.self="taskToDelete = null">
+      <div class="dialog delete-dialog">
+        <div class="delete-icon">⚠️</div>
+        <h3>刪除任務</h3>
+        <p>確定要刪除「{{ taskToDelete?.title }}」？</p>
+        <p class="delete-warning">此操作無法撤銷（會刪除所有已下載的章節）</p>
+        <input type="password" v-model="taskPassword" placeholder="輸入密碼" @keyup.enter="confirmDeleteTask" class="ripple">
+        <div class="dialog-buttons">
+          <button @click="taskToDelete = null" class="cancel-btn ripple">取消</button>
+          <button @click="confirmDeleteTask" :disabled="!taskPassword || deleting" class="delete-confirm-btn ripple">
+            {{ deleting ? '刪除中...' : '確認刪除' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style>
+/* Vue View Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* CSS Variables */
 :root {
-  --primary: #4CAF50;
+  --primary: #4ecdc4;
+  --primary-dark: #3dbdb5;
   --danger: #e53935;
-  --bg: #ffffff;
+  --bg: #f5f5f5;
   --surface: #ffffff;
   --text: #1a1a1a;
   --text-secondary: #666666;
   --border: #e0e0e0;
-  --shadow: rgba(0,0,0,0.1);
+  --shadow: rgba(0,0,0,0.08);
   --shadow-hover: rgba(0,0,0,0.15);
   --radius: 12px;
   --radius-sm: 8px;
@@ -443,10 +742,17 @@ watch(currentChapter, (chapter) => {
 /* Base */
 * { box-sizing: border-box; }
 
+body {
+  margin: 0;
+  font-family: 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -458,6 +764,7 @@ watch(currentChapter, (chapter) => {
   position: relative;
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 .ripple:active {
   transform: scale(0.98);
@@ -479,25 +786,31 @@ watch(currentChapter, (chapter) => {
 .ripple:active::after {
   opacity: 1;
 }
-
 .dark .ripple::after {
   background: radial-gradient(circle, rgba(255,255,255,0.1) 10%, transparent 10%);
 }
 
-/* Header */
+/* Header - 漸變背景 */
 .header {
   display: flex;
   align-items: center;
-  padding: 15px 0;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 25px;
+  padding: 15px 25px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
   gap: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 .header h1 {
   flex: 1;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin: 0;
-  color: var(--text);
+  color: #4ecdc4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .header-actions {
   display: flex;
@@ -506,102 +819,389 @@ watch(currentChapter, (chapter) => {
 
 /* Buttons */
 .theme-btn, .back-btn {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 20px;
   cursor: pointer;
   font-size: 1rem;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 2px 8px var(--shadow);
+  background: rgba(255,255,255,0.15);
+  color: white;
+  transition: background 0.2s;
+}
+.theme-btn:hover, .back-btn:hover {
+  background: rgba(255,255,255,0.25);
 }
 .theme-btn { font-size: 1.2rem; }
 .add-btn {
-  padding: 10px 20px;
+  padding: 8px 20px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 20px;
   cursor: pointer;
   background: var(--primary);
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+}
+.tasks-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.tasks-btn:hover { background: rgba(255,255,255,0.25); }
+.worker-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+.worker-btn.active { opacity: 1; background: rgba(76, 175, 80, 0.3); }
+.worker-btn:hover { opacity: 1; }
+.add-btn:hover {
+  background: var(--primary-dark);
 }
 
-/* Search */
+/* Search Section */
+.search-section {
+  padding: 20px 25px 0;
+}
 .search-bar {
   display: flex;
   gap: 12px;
-  margin-bottom: 25px;
 }
-.search-input, .filter-select {
-  padding: 12px 16px;
+.search-input {
+  flex: 1;
+  padding: 12px 18px;
   border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 25px;
   background: var(--surface);
   color: var(--text);
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.search-input { flex: 1; }
-.search-input:focus, .filter-select:focus {
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
+}
+.filter-select {
+  padding: 12px 18px;
+  border: 2px solid var(--border);
+  border-radius: 25px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+.filter-select:focus {
   outline: none;
   border-color: var(--primary);
 }
 
-/* Error */
-.error {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffebee;
-  color: var(--danger);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 20px;
-}
-.dark .error { background: #4a2020; }
-.error button {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 1.2rem;
+/* Home Page Layout */
+.home {
+  padding: 0 0 40px;
 }
 
-/* Skeleton */
-.skeleton-grid {
+.main-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr 280px;
+  gap: 25px;
 }
-.skeleton-card {
+
+.main-content {
+  min-width: 0;
+}
+
+/* Section Title */
+.section-title {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text);
+  margin: 25px 0 15px;
+  padding-left: 10px;
+  border-left: 4px solid var(--primary);
+}
+
+/* Featured Section */
+.featured-section {
   background: var(--surface);
   border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 15px;
+}
+.featured-card {
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  animation: pulse 1.5s infinite;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
-.skeleton-cover {
-  height: 200px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
+.featured-card:hover {
+  transform: translateY(-3px);
 }
-.skeleton-info { padding: 15px; }
-.skeleton-title {
-  height: 20px;
+.featured-cover {
+  height: 180px;
   background: #f0f0f0;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  overflow: hidden;
 }
-.skeleton-author {
-  height: 14px;
+.featured-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.featured-info {
+  padding: 10px;
+  background: var(--surface);
+}
+.featured-info h4 {
+  margin: 0 0 5px;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.featured-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Tags Section */
+.tags-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.tag-item {
   background: #f0f0f0;
-  border-radius: 4px;
-  width: 60%;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.6; }
-  100% { opacity: 1; }
+.tag-item:hover {
+  background: var(--primary);
+  color: white;
+}
+.tag-item.active {
+  background: var(--primary);
+  color: white;
+}
+.dark .tag-item {
+  background: #333;
+  color: #aaa;
+}
+.dark .tag-item:hover, .dark .tag-item.active {
+  background: var(--primary);
+  color: #1a1a2e;
+}
+
+/* Weekly Section */
+.weekly-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.weekly-card {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.weekly-card:hover {
+  background: rgba(78, 205, 196, 0.1);
+}
+.weekly-cover {
+  width: 80px;
+  height: 100px;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.weekly-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.weekly-content {
+  flex: 1;
+  min-width: 0;
+}
+.weekly-content h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.weekly-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.weekly-author {
+  font-size: 0.8rem;
+  color: var(--primary);
+  margin: 0;
+}
+
+/* Updates Section */
+.updates-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.update-list {
+  display: flex;
+  flex-direction: column;
+}
+.update-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.update-item:last-child {
+  border-bottom: none;
+}
+.update-item:hover {
+  background: rgba(78, 205, 196, 0.1);
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border-radius: var(--radius-sm);
+}
+.update-cat {
+  background: var(--primary);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.update-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-author {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.update-time {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 2px 10px var(--shadow);
+  height: fit-content;
+  position: sticky;
+  top: 80px;
+}
+.sidebar-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--text);
+  margin: 0 0 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary);
+}
+.sidebar-list {
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sidebar-item:last-child {
+  border-bottom: none;
+}
+.sidebar-item:hover .sidebar-book-title {
+  color: var(--primary);
+}
+.sidebar-rank {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--primary);
+  width: 25px;
+  text-align: center;
+}
+.sidebar-info {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-book-title {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.sidebar-author {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 /* Empty */
@@ -619,284 +1219,345 @@ watch(currentChapter, (chapter) => {
   margin-bottom: 25px;
 }
 
-/* Novel Grid */
-.novel-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 25px;
+/* Responsive */
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+  }
 }
-.novel-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: 0 4px 15px var(--shadow);
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
-}
-.novel-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px var(--shadow-hover);
-}
-.novel-cover {
-  height: 220px;
-  background: #f5f5f5;
-  position: relative;
-  overflow: hidden;
-}
-.novel-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-.novel-card:hover .novel-cover img {
-  transform: scale(1.05);
-}
-.no-cover {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-.scraping-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
 
-.novel-info { padding: 18px; }
-.novel-info h3 {
-  margin: 0 0 10px;
-  font-size: 1.05rem;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Detail Page */
+.detail {
+  padding: 0 0 40px;
 }
-.author {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin: 0 0 10px;
-}
-.novel-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.status {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  background: #e0e0e0;
-  color: #333;
-}
-.status.completed { background: #e8f5e9; color: #2e7d32; }
-.status.scraping { background: #fff3e0; color: #e65100; }
-.status.failed { background: #ffebee; color: #c62828; }
-.dark .status { color: #fff; }
-.chapter-count {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-.progress-bar {
-  height: 4px;
-  background: #e0e0e0;
-  border-radius: 2px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary), #81c784);
-  border-radius: 2px;
-  width: 100%;
-  animation: progress-pulse 2s infinite;
-}
-@keyframes progress-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-.delete-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.5);
-  cursor: pointer;
-  font-size: 1rem;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.novel-card:hover .delete-btn { opacity: 1; }
 
-/* Detail */
-.detail { padding: 20px; }
-.detail-actions { margin-bottom: 20px; }
-.refresh-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+/* Detail Breadcrumb */
+.detail .breadcrumb {
+  padding: 15px 0;
+  margin-bottom: 10px;
 }
-.refresh-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-}
-.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.last-sync { font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px; }
+
+/* Novel Header */
 .novel-header {
   display: flex;
   gap: 25px;
-  margin-bottom: 30px;
+  margin-bottom: 25px;
   padding: 20px;
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: 0 4px 15px var(--shadow);
 }
-.cover { width: 160px; flex-shrink: 0; }
+.cover { width: 150px; flex-shrink: 0; }
 .cover img {
   width: 100%;
   border-radius: var(--radius-sm);
   box-shadow: 0 4px 15px var(--shadow);
 }
-.info { flex: 1; }
-.info h2 { margin: 0 0 15px; color: var(--text); }
-.info p { margin: 8px 0; color: var(--text-secondary); }
+.novel-title {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+  color: var(--text);
+}
+.novel-author {
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+.novel-category {
+  margin: 0 0 15px;
+}
+.category-tag {
+  background: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+}
 .description {
-  margin-top: 15px !important;
   font-size: 0.95rem;
   line-height: 1.6;
-}
-.chapter-list h3 { margin-bottom: 15px; color: var(--text); }
-.empty-chapters {
-  text-align: center;
-  padding: 40px;
   color: var(--text-secondary);
+  margin: 0 0 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+.novel-stats {
+  display: flex;
+  gap: 20px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Detail Actions */
+.detail-actions {
+  margin-bottom: 25px;
+}
+.refresh-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+}
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+}
+.refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.delete-btn {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(238, 90, 90, 0.3);
+}
+.delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(238, 90, 90, 0.4);
+}
+
+/* Chapter Section */
+.chapter-section {
+  margin-bottom: 30px;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.sort-btn {
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.sort-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Chapter List (for latest) */
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 15px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.chapter-list .chapter-btn {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 15px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+.chapter-list .chapter-btn:hover {
+  background: rgba(78, 205, 196, 0.15);
+  transform: translateX(5px);
+}
+
+/* Chapter Grid (for all) */
 .chapter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
 .chapter-btn {
-  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--text);
   cursor: pointer;
   text-align: left;
   font-size: 0.95rem;
   box-shadow: 0 2px 8px var(--shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s;
 }
 .chapter-btn:hover {
   transform: translateX(5px);
   box-shadow: 0 4px 12px var(--shadow-hover);
 }
+.chapter-num {
+  color: var(--primary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.chapter-title {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Reading */
 .reading {
-  padding: 25px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px;
   background: var(--surface);
   border-radius: var(--radius);
   min-height: 80vh;
   box-shadow: 0 4px 20px var(--shadow);
 }
-.reading-header {
+
+/* Breadcrumb */
+.breadcrumb {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.breadcrumb-link {
+  color: var(--primary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.breadcrumb-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+.breadcrumb-sep {
+  color: var(--text-secondary);
+}
+.breadcrumb-current {
+  color: var(--text);
+}
+
+/* Chapter Title */
+.chapter-title {
+  text-align: center;
+  font-size: 1.5rem;
+  color: var(--text);
+  margin: 0 0 30px;
+  padding-bottom: 20px;
   border-bottom: 2px solid var(--border);
 }
-.reading-header h2 { margin: 0; color: var(--text); }
-.reading-actions { display: flex; gap: 12px; align-items: center; }
-.bookmark-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: #ffc107;
-  transition: transform 0.2s;
-}
-.bookmark-btn:hover { transform: scale(1.2); }
-.font-size-select {
-  padding: 8px 12px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-}
+
+/* Chapter Content */
 .chapter-content {
   color: var(--text);
-  line-height: 1.8;
+  line-height: 2;
   margin-bottom: 30px;
   min-height: 50vh;
+  text-align: justify;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.content-text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .loading-text {
   text-align: center;
   color: var(--text-secondary);
   padding: 60px;
 }
+
+/* Reading Toolbar */
+.reading-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+}
+.font-size-select {
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.bookmark-btn {
+  background: none;
+  border: 2px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.bookmark-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Chapter Nav */
 .chapter-nav {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 15px;
   padding-top: 20px;
   border-top: 2px solid var(--border);
 }
 .nav-btn {
-  padding: 14px 28px;
+  padding: 12px 25px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 25px;
   background: var(--primary);
   color: white;
   cursor: pointer;
   font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  font-size: 1rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
 }
 .nav-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
 }
 .nav-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
   box-shadow: none;
 }
-.chapter-indicator {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
+.nav-btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  box-shadow: none;
+}
+.nav-btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: none;
 }
 
 /* Dialog */
@@ -959,15 +1620,61 @@ watch(currentChapter, (chapter) => {
 .delete-warning { color: var(--danger); font-size: 0.9rem; margin-bottom: 20px; }
 .delete-confirm-btn { background: var(--danger); color: white; }
 
+/* Tasks Dialog */
+.tasks-dialog { max-width: 500px; width: 90%; }
+.tasks-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+.tasks-header h3 { margin: 0; }
+.worker-status { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.worker-toggle-btn { background: var(--bg); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+.worker-toggle-btn.active { background: #4caf50; color: white; border-color: #4caf50; }
+.tasks-list { max-height: 400px; overflow-y: auto; margin-bottom: 15px; }
+.task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); gap: 10px; }
+.task-item:last-child { border-bottom: none; }
+.task-info { flex: 1; min-width: 0; }
+.task-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; display: flex; gap: 10px; }
+.task-meta .status-completed { color: #4caf50; }
+.task-meta .status-partial { color: #ff9800; }
+.task-meta .status-scraping { color: #2196f3; }
+.task-meta .status-pending { color: #9e9e9e; }
+.task-delete-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px; opacity: 0.6; transition: opacity 0.2s; }
+.task-delete-btn:hover { opacity: 1; }
+.tasks-empty { text-align: center; color: var(--text-secondary); padding: 30px; }
+
 /* Responsive */
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+  }
+  .featured-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  .weekly-grid {
+    grid-template-columns: 1fr;
+  }
+  .header h1 {
+    font-size: 1.1rem;
+  }
+}
+
 @media (max-width: 600px) {
-  .novel-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-  .novel-cover { height: 180px; }
-  .novel-header { flex-direction: column; }
-  .cover { width: 120px; margin: 0 auto; }
-  .chapter-grid { grid-template-columns: 1fr; }
-  .header h1 { font-size: 1.2rem; }
-  .chapter-nav { flex-direction: column; }
-  .nav-btn { width: 100%; text-align: center; }
+  .search-section {
+    padding: 15px 15px 0;
+  }
+  .featured-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .featured-cover {
+    height: 140px;
+  }
+  .update-item {
+    flex-wrap: wrap;
+  }
+  .update-author {
+    display: none;
+  }
 }
 </style>

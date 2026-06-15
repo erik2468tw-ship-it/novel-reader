@@ -91,5 +91,37 @@ export const api = {
 
   async cancelScrape(id) {
     return fetch(`${API_BASE}/api/scrape/${id}/cancel`, { method: 'POST' })
+  },
+
+  // Worker 控制
+  async getWorkerStatus() {
+    const res = await fetch(`${API_BASE}/api/worker/status`)
+    return res.json()
+  },
+
+  async startWorker() {
+    const res = await fetch(`${API_BASE}/api/worker/start`, { method: 'POST' })
+    return res.json()
+  },
+
+  async stopWorker() {
+    const res = await fetch(`${API_BASE}/api/worker/stop`, { method: 'POST' })
+    return res.json()
+  },
+
+  // 任務明細
+  async getTasks() {
+    const res = await fetch(`${API_BASE}/api/tasks`)
+    return res.json()
+  },
+
+  // 刪除任務（使用 tasks API）
+  async deleteTask(id, password) {
+    const res = await fetch(`${API_BASE}/api/scrape/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    })
+    return res.json()
   }
 }
