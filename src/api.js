@@ -50,6 +50,15 @@ export const api = {
     return res.json()
   },
 
+  // 讀取靜態 HTML 章節（效能優化）
+  async getChapterHTML(novelId, chapterId) {
+    const res = await fetch(`${API_BASE}/api/static/${novelId}/${chapterId}`)
+    if (res.status === 404) {
+      return null // 章節不存在或尚未生成靜態 HTML
+    }
+    return res.text()
+  },
+
   // 預載後3個章節
   async preloadChapters(novelId, chapterId) {
     const res = await fetch(`${API_BASE}/api/chapter/${novelId}/${chapterId}/preload`, {

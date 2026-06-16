@@ -213,13 +213,23 @@ async function readChapter(chapter) {
   currentChapter.value = chapter
   loading.value = true
   try {
-    const data = await api.getChapter(currentNovel.value.id, chapter.chapter_number)
-    if (data.status === 'downloading') {
-      await new Promise(r => setTimeout(r, 2000))
-      const retryData = await api.getChapter(currentNovel.value.id, chapter.chapter_number)
-      currentChapter.value.content = retryData.content || '載入中...'
+    // 優先使用靜態 HTML（效能優化）
+    const staticHTML = await api.getChapterHTML(currentNovel.value.id, chapter.chapter_number)
+    if (staticHTML) {
+      // 直接使用靜態 HTML 內容
+      currentChapter.value.content = staticHTML
+      currentChapter.value.isStaticHTML = true
     } else {
-      currentChapter.value.content = data.content || '無內容'
+      // 回退到 JSON API
+      const data = await api.getChapter(currentNovel.value.id, chapter.chapter_number)
+      if (data.status === 'downloading') {
+        await new Promise(r => setTimeout(r, 2000))
+        const retryData = await api.getChapter(currentNovel.value.id, chapter.chapter_number)
+        currentChapter.value.content = retryData.content || '載入中...'
+      } else {
+        currentChapter.value.content = data.content || '無內容'
+      }
+      currentChapter.value.isStaticHTML = false
     }
     saveProgress(currentNovel.value.id, chapter.chapter_number, chapter.chapter_number)
     api.preloadChapters(currentNovel.value.id, chapter.chapter_number)
@@ -322,9 +332,17 @@ onMounted(async () => {
       if (chapter) {
         currentChapter.value = chapter
         currentView.value = 'reading'
-        const data = await api.getChapter(novel.id, chapter.chapter_number)
-        if (data && data.content) {
-          currentChapter.value.content = data.content
+        // 優先使用靜態 HTML
+        const staticHTML = await api.getChapterHTML(novel.id, chapter.chapter_number)
+        if (staticHTML) {
+          currentChapter.value.content = staticHTML
+          currentChapter.value.isStaticHTML = true
+        } else {
+          const data = await api.getChapter(novel.id, chapter.chapter_number)
+          if (data && data.content) {
+            currentChapter.value.content = data.content
+          }
+          currentChapter.value.isStaticHTML = false
         }
       }
     }
@@ -573,7 +591,7 @@ watch(currentChapter, (chapter) => {
 
     <!-- 閱讀頁 -->
     <Transition name="fade" mode="out-in">
-    <main v-if="currentView === 'reading' && currentChapter" class="reading">
+    <main v-if="currentView === 'reading' && currentChapter" class="reading" :key="currentChapter.chapter_number">
       <!-- 麵包屑導航 -->
       <nav class="breadcrumb">
         <span @click="currentView = 'home'" class="breadcrumb-link">首頁</span>
@@ -584,11 +602,15 @@ watch(currentChapter, (chapter) => {
       </nav>
 
       <!-- 章節標題 -->
-      <h1 class="chapter-title">{{ currentChapter.title }}</h1>
+      <h1 class="chapter-title">
+        {{ currentChapter.title }}
+        <span v-if="currentChapter.isStaticHTML" class="static-badge">⚡ 極速</span>
+      </h1>
 
       <!-- 內容 -->
       <div class="chapter-content" :style="{ fontSize: fontSize + 'px', lineHeight: '2' }">
         <div v-if="loading" class="loading-text">載入中...</div>
+        <div v-else-if="currentChapter.isStaticHTML" class="content-text static-html" v-html="currentChapter.content"></div>
         <div v-else class="content-text">{{ currentChapter.content }}</div>
       </div>
 
@@ -1419,7 +1441,7 @@ body {
 
 /* Reading */
 .reading {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 30px;
   background: var(--surface);
@@ -1476,6 +1498,24 @@ body {
 .content-text {
   white-space: pre-wrap;
   word-break: break-word;
+}
+/* 靜態 HTML 內容樣式 */
+.content-text.static-html {
+  white-space: normal;
+}
+.content-text.static-html p {
+  margin-bottom: 1em;
+  text-indent: 2em;
+}
+/* 靜態 HTML 標記 */
+.static-badge {
+  font-size: 0.5em;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  vertical-align: middle;
+  margin-left: 8px;
 }
 .loading-text {
   text-align: center;

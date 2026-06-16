@@ -151,13 +151,114 @@ function updateNovelSync(novelId, status, totalChapters) {
         novel.lastSync = new Date().toISOString();
         novel.updatedAt = new Date().toISOString();
         saveNovelList(novels);
+        
+        // 當下載完成時，生成靜態首頁
+        if (status === 'completed') {
+            generateNovelIndexHTML(novelId, novel.title, novels);
+            generateGlobalIndexHTML();
+        }
     }
+}
+
+// 生成小說的靜態首頁（章節列表）
+function generateNovelIndexHTML(novelId, novelTitle, allNovels) {
+    const staticDir = join(NOVELS_DIR, 'static');
+    try { if (!fs.existsSync(staticDir)) fs.mkdirSync(staticDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') log(`[靜態HTML] 建立目錄失敗: ${e.message}`); }
+    
+    const novelDir = join(NOVELS_DIR, String(novelId));
+    const chapters = [];
+    
+    // 讀取所有章節
+    if (fs.existsSync(novelDir)) {
+        const files = fs.readdirSync(novelDir).filter(f => f.endsWith('.json'));
+        for (const file of files) {
+            try {
+                const data = JSON.parse(fs.readFileSync(join(novelDir, file), 'utf8'));
+                chapters.push({
+                    number: data.chapterNumber,
+                    title: data.title
+                });
+            } catch (e) {}
+        }
+    }
+    
+    // 排序章節
+    chapters.sort((a, b) => a.number - b.number);
+    
+    // 生成章節列表 HTML
+    const chapterList = chapters.map(ch => 
+        `            <li><a href="${ch.number}.html">第${ch.number}章 ${ch.title}</a></li>`
+    ).join('\n');
+    
+    const html = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${novelTitle}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { font-size: 1.5em; margin-bottom: 20px; color: #333; }
+        .chapter-list { list-style: none; background: #fff; border-radius: 8px; overflow: hidden; }
+        .chapter-list li { border-bottom: 1px solid #eee; }
+        .chapter-list li:last-child { border-bottom: none; }
+        .chapter-list a { display: block; padding: 15px 20px; color: #333; text-decoration: none; transition: background 0.2s; }
+        .chapter-list a:hover { background: #f0f0f0; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: #3498db; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首頁</a>
+        <h1>${novelTitle}</h1>
+        <ul class="chapter-list">
+${chapterList}
+        </ul>
+    </div>
+</body>
+</html>`;
+    
+    fs.writeFileSync(join(staticDir, `${novelId}.html`), html, 'utf8');
 }
 
 // API Routes
 app.get('/api/novels', (req, res) => {
     try {
         res.json(getNovels());
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 讀取靜態 HTML 章節內容（繞過 JSON 解析）
+app.get('/api/static/:novelId/:chapter', (req, res) => {
+    try {
+        const { novelId, chapter } = req.params;
+        const htmlFile = join(NOVELS_DIR, 'static', novelId, `${chapter}.html`);
+        if (fs.existsSync(htmlFile)) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(fs.readFileSync(htmlFile, 'utf8'));
+        } else {
+            res.status(404).json({ error: 'Chapter not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 讀取靜態 HTML 小說首頁
+app.get('/api/static/:novelId', (req, res) => {
+    try {
+        const { novelId } = req.params;
+        const htmlFile = join(NOVELS_DIR, 'static', `${novelId}.html`);
+        if (fs.existsSync(htmlFile)) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(fs.readFileSync(htmlFile, 'utf8'));
+        } else {
+            res.status(404).json({ error: 'Novel index not found' });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -258,6 +359,23 @@ app.post('/api/worker/stop', (req, res) => {
     workerEnabled = false;
     log('Worker 已停止');
     res.json({ success: true, message: 'Worker 已停止' });
+});
+
+// 除錯：手動觸發一次 scrapeNovel
+app.post('/api/debug/scrape', (req, res) => {
+    const novels = getNovelList();
+    const pendingNovel = novels.find(n => n.status === 'pending' || n.status === 'scraping');
+    if (!pendingNovel) {
+        res.json({ success: false, message: '沒有待處理的小說' });
+        return;
+    }
+    log(`[DEBUG] 手動觸發 scrapeNovel: ${pendingNovel.title}`);
+    scrapeNovel(pendingNovel).then(() => {
+        res.json({ success: true, message: 'scrapeNovel 完成' });
+    }).catch(err => {
+        res.json({ success: false, message: `scrapeNovel 失敗: ${err.message}` });
+    });
+    res.json({ success: true, message: 'scrapeNovel 已開始（非阻塞）' });
 });
 
 // 取得所有任務明細
@@ -374,7 +492,117 @@ function saveChapterToFile(novelId, chapterNumber, title, content) {
     const chapterFile = join(novelDir, `${chapterNumber}.json`);
     const data = { novelId, chapterNumber, title, content, savedAt: new Date().toISOString() };
     fs.writeFileSync(chapterFile, JSON.stringify(data, null, 2), 'utf8');
+    
+    // 同時生成靜態 HTML
+    const staticDir = join(NOVELS_DIR, 'static', String(novelId));
+    try { if (!fs.existsSync(staticDir)) fs.mkdirSync(staticDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') log(`[靜態HTML] 建立目錄失敗: ${e.message}`); }
+    const htmlFile = join(staticDir, `${chapterNumber}.html`);
+    const htmlContent = generateChapterHTML(novelId, chapterNumber, title, content);
+    fs.writeFileSync(htmlFile, htmlContent, 'utf8');
+    
     return chapterFile;
+}
+
+// 生成章節的靜態 HTML
+function generateChapterHTML(novelId, chapterNumber, title, content) {
+    // 格式化內容：將換行轉換為 <br> 或 <p>
+    const formattedContent = content
+        .split('\n\n')
+        .map(para => para.trim())
+        .filter(para => para.length > 0)
+        .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+        .join('\n');
+    
+    return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第${chapterNumber}章 ${title}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第${chapterNumber}章 ${title}</h1>
+        <div class="chapter-content">
+            ${formattedContent}
+        </div>
+        <div class="nav">
+            <a href="${chapterNumber - 1}.html" id="prevBtn">上一章</a>
+            <a href="${chapterNumber + 1}.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('${chapterNumber - 1}.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('${chapterNumber + 1}.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>`;
 }
 
 function getDownloadedChapterCount(novelId) {
@@ -385,7 +613,7 @@ function getDownloadedChapterCount(novelId) {
 
 async function getNovelMetadata(page, novelUrl) {
     try {
-        await page.goto(novelUrl, { waitUntil: 'networkidle', timeout: 60000 });
+        await page.goto(novelUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.waitForTimeout(2000);
         return await page.evaluate(() => {
             const titleEl = document.querySelector('h2.hotwordtitle') || document.querySelector('h2') || document.querySelector('.title');
@@ -427,7 +655,12 @@ async function getChapterUrls(page, novelUrl) {
                 // 嘗試提取章節編號
                 const chapterMatch = text.match(/第(\d+)章/);
                 const chapterNum = chapterMatch ? parseInt(chapterMatch[1]) : 0;
-                return { title: text, url: link.href, chapterNum };
+                // 確保 URL 是完整的（有些 href 是相對路徑）
+                let url = link.href;
+                if (url.startsWith('/')) {
+                    url = 'https://www.novel543.com' + url;
+                }
+                return { title: text, url: url, chapterNum };
             });
         });
     } catch (error) {
@@ -525,18 +758,41 @@ async function getChapterContent(page, chapterUrl) {
             let allContent = [];
             let pageNum = 1;
             let maxPages = 10; // 防止無限循環
-            
-            // 擷取內容的函式
+            // 擷取內容的函式（保持原始段落結構）
             const extractContent = async () => {
                 const content = await page.$eval('#chapter-content, #chapterContent, div.chapter-content, .chapter-content', el => {
                     const clone = el.cloneNode(true);
+                    // 移除廣告和不相關的元素
                     ['script', 'style', 'iframe', 'noscript', 'svg', 'img', 'video', 'audio'].forEach(tag => clone.querySelectorAll(tag).forEach(e => e.remove()));
                     const adPatterns = [/ad/i, /ads/i, /banner/i, /sponsor/i, /onead/i, /pubfuture/i, /tamedia/i, /google/i, /ND/i, /ONEAD/i, /TAMad/i];
                     clone.querySelectorAll('*').forEach(el => {
                         const className = el.className || '', id = el.id || '';
                         if (adPatterns.some(p => (typeof className === 'string' && p.test(className)) || (typeof id === 'string' && p.test(id)))) el.remove();
                     });
-                    return clone.innerText || clone.textContent || '';
+                    // 遍歷所有 block 元素，分別提取文字並用換行分隔
+                    const blockTags = ['p', 'div', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'tr', 'blockquote'];
+                    const texts = [];
+                    function extractBlockText(node) {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            const t = node.textContent?.trim();
+                            if (t) texts.push(t);
+                        } else if (node.nodeType === Node.ELEMENT_NODE) {
+                            if (node.tagName === 'BR') {
+                                texts.push('');
+                            } else {
+                                // 先處理子節點
+                                Array.from(node.childNodes).forEach(child => extractBlockText(child));
+                                // block 元素後面加換行
+                                if (blockTags.includes(node.tagName)) {
+                                    texts.push('');
+                                }
+                            }
+                        }
+                    }
+                    Array.from(clone.childNodes).forEach(child => extractBlockText(child));
+                    // 清理多餘空行
+                    let result = texts.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+                    return result;
                 }).catch(() => '');
                 return content;
             };
@@ -583,6 +839,9 @@ async function getChapterContent(page, chapterUrl) {
             let content = await extractContent();
             allContent.push(content);
             
+            // 取得當前章節號碼（用於分頁比對）
+            const currentChapterNum = title.match(/第(\d+)章/)?.[1] || '';
+            
             // 檢查是否有下一頁連結並自動下載所有頁面
             while (pageNum < maxPages) {
                 // 尋找下一頁連結
@@ -592,10 +851,49 @@ async function getChapterContent(page, chapterUrl) {
                 const href = await nextLink.getAttribute('href');
                 if (!href || href === '#' || href === 'javascript:void(0)') break;
                 
-                pageNum++;
-                log(`  下載第 ${pageNum} 頁...`);
-                await nextLink.click();
+                // 確保 URL 是完整的（有些 href 是相對路徑）
+                const fullUrl = href.startsWith('http') ? href : 'https://www.novel543.com' + href;
+                
+                // 使用 goto 導航到下一頁（因為點擊可能被導向其他網域）
+                await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 await page.waitForTimeout(2000);
+                
+                // 提取新頁面的標題
+                let nextPageTitle = '';
+                try {
+                    const titleSelectors = ['.chapter-title', 'h2.chapter-title', '#chapter-content h2', '#chapterContent h2', 'h1.title', '.title h2', 'h2'];
+                    for (const sel of titleSelectors) {
+                        const el = await page.$(sel);
+                        if (el) {
+                            const text = await el.innerText() || el.textContent;
+                            if (text && text.trim().length > 2) {
+                                nextPageTitle = text.trim().replace(/\s*\(\d+\/\d+\)\s*$/g, '').replace(/\s*第\d+頁\s*/g, '').trim();
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {}
+                
+                // 如果抓不到標題，用 page title
+                if (!nextPageTitle) {
+                    try {
+                        const pageTitle = await page.title();
+                        if (pageTitle) {
+                            nextPageTitle = pageTitle.replace(/\s*\(\d+\/\d+\)\s*$/g, '').replace(/\s*-\s*\d+\/\d+\s*$/g, '').trim();
+                        }
+                    } catch (e) {}
+                }
+                
+                // 檢查下一頁是否同一章（比對章節號碼）
+                const nextChapterNum = nextPageTitle.match(/第(\d+)章/)?.[1] || '';
+                if (nextChapterNum && nextChapterNum !== currentChapterNum) {
+                    log(`  偵測到新章節「${nextPageTitle}」，停止分頁下載`);
+                    break;
+                }
+                
+                // 同一章，繼續下載
+                pageNum++;
+                log(`  下載第 ${pageNum} 頁（仍為：${title}）...`);
                 
                 content = await extractContent();
                 allContent.push(content);
@@ -634,17 +932,6 @@ async function getChapterContent(page, chapterUrl) {
                 mergedContent = mergedContent.replace(leadingDup, '').trim();
             }
             
-            // 處理「第X章...第X章...」模式的重複
-            const chapterNumMatch = title.match(/第(\d+)章/);
-            if (chapterNumMatch) {
-                const chNum = chapterNumMatch[1];
-                // 找第二個「第X章」的位置並截斷
-                const secondChapter = mergedContent.indexOf('第' + chNum + '章', 20);
-                if (secondChapter > 30) {
-                    mergedContent = mergedContent.substring(0, secondChapter);
-                }
-            }
-            
             // 正規化換行符
             mergedContent = mergedContent
                 .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
@@ -652,16 +939,14 @@ async function getChapterContent(page, chapterUrl) {
             
             // 分割成段落並清理
             let finalContent = mergedContent
-                .split('\n\n')
+                .split('\n')
                 .map(para => {
                     return para
                         .replace(/\t/g, '')
                         .replace(/ {2,}/g, ' ')
-                        .replace(/\n/g, ' ')
-                        .replace(/\s+/g, ' ')
                         .trim();
                 })
-                .filter(para => para.length > 3 && !para.match(/^[\s\W]+$/))
+                .filter(para => para.length > 3 && /[a-zA-Z0-9\u4e00-\u9fa5]/.test(para))
                 .join('\n\n');
             
             // 最終清理：移除開頭的章節標題重複
@@ -697,6 +982,11 @@ async function scrapeNovel(novel, retryCount = 0) {
         log(`現有章節: ${existingCount}, 總章節: ${chapters.length}`);
         let newChapters = 0, failedChapters = [];
         for (let i = existingCount; i < chapters.length; i++) {
+            // 每次下載前檢查是否已停止
+            if (!workerEnabled) {
+                log('Worker 已停止，結束下載');
+                break;
+            }
             const chapter = chapters[i];
             log(`下載第 ${i + 1}/${chapters.length} 章: ${chapter.title}`);
             const data = await getChapterContent(page, chapter.url);
@@ -827,9 +1117,109 @@ async function refreshNovel(novel) {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Novel Scraper API + Worker running on http://0.0.0.0:${PORT}`);
     console.log(`JSON 目錄: ${NOVELS_DIR}`);
+    
+    // 啟動時為已存在的小說生成靜態 HTML
+    regenerateAllStaticHTML();
+    generateGlobalIndexHTML();
 });
 
 process.on('SIGINT', () => { process.exit(0); });
 
 // 啟動 Worker（不阻塞 Express）
 workerLoop();
+
+// 為所有已存在的小說生成靜態 HTML
+function regenerateAllStaticHTML() {
+    const staticDir = join(NOVELS_DIR, 'static');
+    try {
+        if (!fs.existsSync(staticDir)) fs.mkdirSync(staticDir, { recursive: true });
+    } catch (e) {
+        if (e.code !== 'EEXIST') {
+            log(`[靜態HTML] 建立目錄失敗: ${e.message}`);
+            return;
+        }
+    }
+    
+    const novels = getNovels();
+    log(`[靜態HTML] 發現 ${novels.length} 本小說，開始生成靜態頁面...`);
+    
+    for (const novel of novels) {
+        if (novel.status === 'completed' || novel.status === 'partial') {
+            // 生成小說首頁
+            const novelsForIndex = getNovelList();
+            const novelData = novelsForIndex.find(n => n.novelId === novel.id);
+            if (novelData) {
+                generateNovelIndexHTML(novel.id, novelData.title, novelsForIndex);
+            }
+            
+            // 生成各章節 HTML
+            const novelDir = join(NOVELS_DIR, String(novel.id));
+            if (fs.existsSync(novelDir)) {
+                const files = fs.readdirSync(novelDir).filter(f => f.endsWith('.json'));
+                for (const file of files) {
+                    try {
+                        const data = JSON.parse(fs.readFileSync(join(novelDir, file), 'utf8'));
+                        const staticChapterDir = join(staticDir, String(novel.id));
+                        try { if (!fs.existsSync(staticChapterDir)) fs.mkdirSync(staticChapterDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') log(`[靜態HTML] 建立目錄失敗: ${e.message}`); }
+                        const htmlFile = join(staticChapterDir, `${data.chapterNumber}.html`);
+                        const htmlContent = generateChapterHTML(novel.id, data.chapterNumber, data.title, data.content);
+                        fs.writeFileSync(htmlFile, htmlContent, 'utf8');
+                    } catch (e) {
+                        log(`[靜態HTML] 生成章節失敗: ${file} - ${e.message}`);
+                    }
+                }
+            }
+            log(`[靜態HTML] 完成: ${novel.title}`);
+        }
+    }
+    log(`[靜態HTML] 全部完成！靜態頁面目錄: ${staticDir}`);
+}
+
+// 生成全局首頁（所有小說列表）
+function generateGlobalIndexHTML() {
+    const staticDir = join(NOVELS_DIR, 'static');
+    try { if (!fs.existsSync(staticDir)) fs.mkdirSync(staticDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') log(`[靜態HTML] 建立目錄失敗: ${e.message}`); }
+    
+    const novels = getNovels().filter(n => n.status === 'completed' || n.status === 'partial');
+    
+    const novelList = novels.map(n => 
+        `            <div class="novel-card">
+                <h3><a href="${n.id}.html">${n.title}</a></h3>
+                <p class="author">作者：${n.author || '未知'}</p>
+                <p class="category">分類：${n.category || '其他'}</p>
+                <p class="chapters">章節數：${n.totalChapters || 0}</p>
+            </div>`
+    ).join('\n');
+    
+    const html = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小說閱讀器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1 { font-size: 2em; margin-bottom: 30px; color: #333; text-align: center; }
+        .novel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .novel-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .novel-card h3 { margin-bottom: 10px; }
+        .novel-card h3 a { color: #3498db; text-decoration: none; }
+        .novel-card h3 a:hover { text-decoration: underline; }
+        .novel-card p { color: #666; font-size: 0.9em; margin-bottom: 5px; }
+        .novel-card .chapters { color: #999; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 小說閱讀器</h1>
+        <div class="novel-grid">
+${novelList}
+        </div>
+    </div>
+</body>
+</html>`;
+    
+    fs.writeFileSync(join(staticDir, 'index.html'), html, 'utf8');
+}
