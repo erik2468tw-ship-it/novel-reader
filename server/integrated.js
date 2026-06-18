@@ -1118,9 +1118,11 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`Novel Scraper API + Worker running on http://0.0.0.0:${PORT}`);
     console.log(`JSON 目錄: ${NOVELS_DIR}`);
     
-    // 啟動時為已存在的小說生成靜態 HTML
-    regenerateAllStaticHTML();
-    generateGlobalIndexHTML();
+    // 啟動時為已存在的小說生成靜態 HTML（非阻塞）
+    setImmediate(() => {
+        regenerateAllStaticHTML();
+        generateGlobalIndexHTML();
+    });
 });
 
 process.on('SIGINT', () => { process.exit(0); });

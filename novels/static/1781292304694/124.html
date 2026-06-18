@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第124章 未知章節</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第124章 未知章節</h1>
+        <div class="chapter-content">
+            <p>第110 章 諜戰 (1/2) 林建中嘴角微揚，心中暗自竊喜：這麼多年來，妄圖靠近他的女子可謂數不勝數，少說也得有成百上千個吧？就憑眼前這等手段，實在太過幼稚可笑，簡直如同孩童過家家一般！ 就在這時，林建中的目光不經意間掃到了那個女人胸口處佩戴的工作牌，上面清晰地印著她的姓名——“波多結衣”！原來竟是來自東瀛島國的女子啊！林建中不禁心頭一震，但表面上卻並未露出絲毫異樣神色。 然而，即便明知對方身份背景特殊，林建中依然選擇保持沉默，並未當眾戳穿她們的陰謀詭計。 只見他若無其事地揮了揮手，示意眾人繼續前行。 而那名叫波多結衣的女人，則眼睜睜地望著漸行漸遠的林建中身影，不由自主地伸出舌頭輕輕舔舐了一下乾澀的嘴唇，同時在心底默默立下誓言：無論如何，都必須將這位英俊瀟洒、氣質非凡的中國男子征服於自己的石榴裙下！ 一旁的安保人員相互看了一眼，安保隊長道:“去查一下這個人的履歷！” “是！”一名安保人員聽命下去。 這些安保人員都是退伍軍人，有些甚至都是偵察兵出身，奉命前來保護林建中。 林建中並未言語過多，只是靜靜地觀察著眼前這個女人。他一眼便能察覺到她身上散發出來的那種濃厚的風塵氣息，儘管對方極力掩飾自己真實身份和意圖，但這絲毫瞞不過經驗老到的林建中。憑藉多年來與各種人物打交道的敏銳洞察力以及職業素養，他幾乎可以斷定：此女必定是個間諜無疑！溫馨提示: 登錄用戶跨設備永久保存書架的數據, 建議大家登錄使用</p>
+        </div>
+        <div class="nav">
+            <a href="123.html" id="prevBtn">上一章</a>
+            <a href="125.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('123.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('125.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>

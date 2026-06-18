@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第197章 第197章 系統積分</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第197章 第197章 系統積分</h1>
+        <div class="chapter-content">
+            <p>這話用在這裡或許並不完全貼切。</p>
+<p>但云知知對小五這孩子，那真是又憐又恨。</p>
+<p>她特意準備了豐盛的早餐。</p>
+<p>小五這孩子，生肉和熟肉都要吃，但似乎對帶著血絲的生肉更加情有獨鍾。</p>
+<p>剛才，雲知知拿出新鮮肉準備烹飪時，一個不留神，小五就抓了塊血淋淋的生肉，直接啃了起來。</p>
+<p>雲知知擔心生肉裡面有寄生蟲，最終，她還是把肉都煮熟了。</p>
+<p>小五雖然人小小的，僅僅四五歲，但食量大得驚人。雲知知好幾次都害怕他把肚子撐破了，可那肚子，從頭到尾都沒什麼變化。</p>
+<p>看著小五在那裡大快朵頤。</p>
+<p>雲知知撐著下巴坐一旁，心裡嘆息：自己這裡是交易所，不是福利院，更不是託兒所啊。</p>
+<p>這孩子的父母究竟是誰啊？</p>
+<p>真是太不負責任了！</p>
+<p>她這樣想著，立即喚出了系統面板，“系統，我要查詢客人的身份。”</p>
+<p>冰冷的機械音隨即響起，“15號空間交易站主人——雲知知，您目前處於實習階段，無權查閱客人身份信息。”</p>
+<p>“什麼？”雲知知一驚，從沙發上站了起來，“我……實習？我居然還只是實習？你之前沒說，還有實習啊？”</p>
+<p>她突然的動作，驚動了正在專心進食的小五。小五抬起頭來，水汪汪的大眼睛里閃過一絲詫異。</p>
+<p>雲知知不得不接受了這個事實，又對系統問道，“那……實習要多久？怎麼才能轉正？”</p>
+<p>面板上，浮現出密密麻麻的文字。</p>
+<p>系統冰冷的聲音同步響起，“根據您所提出的問題，系統綜合考慮您的需求，將簡短為您解答——”</p>
+<p>“空間站擁有者，需累積到一萬積分，可開啟系統商城兌換功能；”</p>
+<p>“達到十萬積分，可查看來訪者身份；”</p>
+<p>“達到百萬積分，可申請前往異世界；”</p>
+<p>“具體詳情及其他特權，請參看《空間交易站積分說明》。”</p>
+<p>雲知知瞠目結舌。</p>
+<p>沒想到空間交易站，還有這些隱藏功能。</p>
+<p>她立即追問，“那怎麼累積積分？”</p>
+<p>面板上，又彈出了一個類似回收框的大圖標。</p>
+<p>系統道，“請將您想要用於兌換積分的商品，放入回收框中。”</p>
+<p>雲知知恍然大悟。</p>
+<p>原來，是要用各個世界的交易利潤，來兌換積分！</p>
+<p>她最先想到的東西，就是剛從小五那裡得來的兩塊小石頭，也不知道那玩意兒值不值錢！</p>
+<p>她微微翻手，就將兩塊小石頭從儲物戒里取了出來，小心翼翼地放入面板上的回收框中。</p>
+<p>“叮——”</p>
+<p>“檢測到下品碎仙石兩塊，可獲得1點積分。”</p>
+<p>“提示：實習期間，物品兌換享受額外加成。”</p>
+<p>雲知知不可置信地瞪大眼睛，“下品？仙石？”</p>
+<p>她猛地轉頭看向小五，卻發現，不知何時，這孩子已經停止了進食，正站在她身旁，好奇地盯著系統面板。</p>
+<p>小五居然能看見系統面板！</p>
+<p>雲知知心中一驚，下意識地往旁邊退了一步，與小五拉開距離。</p>
+<p>小五歪著頭，露出困惑的表情。</p>
+<p>雲知知乾咳一聲，努力讓語氣顯得自然，“小五，你先去吃東西好不好？等姐姐處理完這些事，就……就陪你玩好不好？”</p>
+<p>她一邊說著，一邊揮了揮手，做出驅趕的動作。</p>
+<p>大家遇到 「你是真人嗎」 這樣的廣告, 無需理會, 關閉即可, 切勿掃碼和發送簡訊!</p>
+<p>第197章 系統積分小五果然聽話地轉身回去繼續吃東西。</p>
+<p>雲知知重新將注意力投向面板。</p>
+<p>她暗忖，“實習期有加成，這可是積累積分的好機會啊。”</p>
+<p>“那麼小的仙石，都能換1點積分，那我儲物戒里的靈石、靈植、天材地寶和法器豈不是更值錢？”</p>
+<p>她在儲物戒角落裡，搜到了幾塊還較為完好的下品靈石，投了進去。</p>
+<p>“叮——”</p>
+<p>“檢測到下品靈石五塊，可獲得0.000005點積分。”</p>
+<p>雲知知，“！！！！”</p>
+<p>“坑爹啊！0.000005？”她爆發一聲吐槽。</p>
+<p>“下品靈石，一枚才0.000001積分？還是在實習期間，兌換積分有加成的情況下，才給我0.000001積分！！！”</p>
+<p>雲知知真的有點破防了。</p>
+<p>“系統，你開這個價，良心真的不會痛嗎？”</p>
+<p>這完全就是一粒沙投入了大海的感覺，而她自己就是那個精衛……</p>
+<p>她不信邪，再次將手頭一些暫時沒有交易需求的東西，哐哐往裡投。</p>
+<p>包括蘇言澈給的法器、余時安給的丹藥，珠寶、那些還沒被小五糟蹋的天材地寶和靈植……</p>
+<p>然而，一番操作下來，積分僅僅增加了0.386772。</p>
+<p>小數點后六位，應該是系統的極限了。</p>
+<p>至於那些凡人使用的珠寶首飾，積分更是少得可憐。</p>
+<p>在這些東西中，要論價值最高的，當屬魚幼帶過來的那些天材地寶。</p>
+<p>但那些東西，雲知知並沒有投入太多，因為那些東西目前還不屬於她，只是魚幼寄存在她這裡的。</p>
+<p>僅次於天材地寶的，是墨元戟帶過來的那七枚儲物戒里的法器、靈石。</p>
+<p>再次的，便是蘇言澈和余時安的東西，兌換的積分，非常非常少。</p>
+<p>看著這一點點積分，雲知知欲哭無淚。</p>
+<p>她是怎麼也沒想到，自己儲物戒里的所有寶貝，加起來都不如小五那兩塊不起眼的石頭。</p>
+<p>那所謂的仙石，竟然才是全場價值最高的！</p>
+<p>雲知知癱在沙發上。</p>
+<p>狡黠的目光，緩緩投向了小五。</p>
+<p>正在啃骨頭的小五，似乎察覺到了什麼，突然打了個寒顫，抬起頭來。</p>
+<p>就見雲知知忽然對他露出一個無比燦爛的笑容，還朝他招了招手。</p>
+<p>“小五寶貝，來來來，姐姐有點兒事跟你商量一下。”</p>
+<p>小五站在原地，怔怔地盯著她，身形完全沒動。</p>
+<p>雲知知，“……”</p>
+<p>她只得主動湊近些，在保持一米距離的位置停下，指了指那個破碗，用討好的語氣說，“小五，姐姐還想要那樣的石頭，你能不能為姐姐弄些來？”</p>
+<p>“姐姐可以用這些東西和你換哦~”</p>
+<p>說著，她取出一塊璀璨的寶石，遞到小五面前。</p>
+<p>雲知知這操作，簡直是要拿魚目去換珍珠。</p>
+<p>小五沒接那塊寶石，而是低下頭繼續吃肉。</p>
+<p>雲知知遞出寶石的手，僵在半空。</p>
+<p>這孩子，什麼意思啊？你好歹給個回應啊？</p>
+<p>雲知知又換了其他幾樣物品。</p>
+<p>可小五看也不看。</p>
+<p>雲知知無奈。</p>
+<p>這孩子，聽不見，又說不出，溝通起來實在太困難了。</p>
+<p>頁面右上角有「切換簡繁體」、 「調整字體大小」、「閱讀背景色」、「更換字體」 等功能</p>
+        </div>
+        <div class="nav">
+            <a href="196.html" id="prevBtn">上一章</a>
+            <a href="198.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('196.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('198.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>

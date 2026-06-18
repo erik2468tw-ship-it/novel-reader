@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第34章 第34章 人形BOSS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第34章 第34章 人形BOSS</h1>
+        <div class="chapter-content">
+            <p>迷惘之塔外，人山人海。</p>
+<p>蓉城今年的武考報名人數創了新高，近兩萬名考生，五千多支隊伍。廣場上黑壓壓全是人，考生、家長、圍觀群眾，還有來自全國各高校的招生官，把整個廣場圍得水泄不通。</p>
+<p>廣場上空，十塊巨大的懸空屏幕緩緩亮起，每塊都有十米見寬，清晰地顯示著迷惘之塔內的實時畫面。</p>
+<p>這十塊屏幕，只直播前十名隊伍的闖關過程。</p>
+<p>其餘隊伍，只能在塔里埋頭苦幹，註定不會太引人關注。</p>
+<p>除非闖入前十！</p>
+<p>“快看！第一名的隊伍已經到第四層了！”</p>
+<p>有人驚呼出聲，無數目光齊刷刷投向最中間那塊屏幕。</p>
+<p>屏幕上，四道身影正在第四層的怪物群中穿梭。</p>
+<p>走在最前面的少年，手持一把粉色巨斧，身形如風，一斧一個，十幾級的怪物在他面前像紙糊的一樣。</p>
+<p>他身後，兩個少女交替釋放技能——一個雙眸泛著黑光，成片成片的怪物陷入幻境；一個法杖揮舞，冰鳥呼嘯，凍住漏網之魚。</p>
+<p>最後一個少女背著比她人還高的十字架，跟在隊伍後面，偶爾衝上去掄一斧頭，偶爾跑到受傷的隊友身邊——一拳砸下去。</p>
+<p>“那個拿斧頭的，什麼職業？傷害怎麼這麼高？”</p>
+<p>“卧槽，一刀15000，這輸出也太猛了吧？”</p>
+<p>“等等，他不是吳恙嗎？我記得很清楚，蓉城7中的校草，長得和讀者老爺們一樣帥氣！”</p>
+<p>“沒錯！但是我記得，吳恙的話，好像是個強化師？”</p>
+<p>“強化師？你在開什麼玩笑？”</p>
+<p>“這樣的猛男，你給我說他是強化師？那個最廢物的生活職業？”</p>
+<p>“這尼瑪！哪有一點強化師的樣子嗎？”</p>
+<p>廣場上的議論聲此起彼伏。</p>
+<p>很快，有人從武考報名系統里查到了這支隊伍的信息——</p>
+<p>吳恙，男，18歲，職業：強化師（SSS級），等級：43。</p>
+<p>陸雪雯，女，18歲，職業：冰天雪女（SS級），等級：23。</p>
+<p>羅泳琪，女，18歲，職業：瞳術師（SS級），等級：22。</p>
+<p>端木愛莉，女，18歲，職業：近戰奶媽（SSS級），等級：25。</p>
+<p>當“強化師”三個字出現在屏幕上時，整個廣場安靜了整整三秒。</p>
+<p>然後炸了。</p>
+<p>“卧槽！真是強化師！”</p>
+<p>“SSS級強化師？強化師還有SSS級的？”</p>
+<p>“不是，一個強化師，43級？他怎麼升的級？”</p>
+<p>“你們看清楚沒有，他一斧頭砍了多少血？15000？我一個戰鬥職業都沒這麼高！”</p>
+<p>“這不可能！強化師的攻擊力怎麼可能這麼高？”</p>
+<p>“武器！肯定是他那把斧頭！你看那斧頭的顏色，至少是神器級別的！”</p>
+<p>“就算是神器，強化師的基礎屬性擺在那兒，怎麼可能打出這麼高的傷害？”</p>
+<p>質疑聲、驚嘆聲、討論聲混雜在一起，嗡嗡作響。</p>
+<p>但很快，人們的注意力又被另一個人吸引了——</p>
+<p>端木愛莉。</p>
+<p>屏幕上，這個粉發雙馬尾的小蘿莉，正扛著比她人還高的十字架，追著一隻漏網的怪物猛砸。</p>
+<p>一十字架下去，怪物直接被打飛出去，撞在牆上，血條暴跌。</p>
+<p>然後她回頭，看到陸雪雯被怪物蹭了一下，立刻眼睛一亮，衝過去——</p>
+<p>“聖光之觸！”</p>
+<p>一拳砸在陸雪雯肩膀上。</p>
+<p>陸雪雯被她打得一個踉蹌，差點摔倒，但身上的傷口以肉眼可見的速度癒合了。</p>
+<p>登錄用戶跨設備永久保存書架的數據, 建議大家登錄使用</p>
+<p>第34章 人形BOSS廣場上又是一片沉默。</p>
+<p>“那是什麼職業？拿著十字架當武器？”</p>
+<p>“近戰奶媽？奶媽還能近戰的？”</p>
+<p>“她剛才那一拳，打隊友比打怪物還用力吧？”</p>
+<p>“這是什麼奇葩職業？”</p>
+<p>“SSS級？奶媽也有SSS級的？”</p>
+<p>議論聲越來越大了。</p>
+<p>廣場正前方的指揮台上，幾個人正襟危坐。</p>
+<p>最中間的是蓉城武考總指揮趙德柱，五十多歲，頭髮花白，穿著一身洗得發白的軍裝，看起來像個普通老頭，但了解他的人都清楚——這位是退役的八階戰鬥職業者，當年在戰場上殺敵無數，威名赫赫。</p>
+<p>他旁邊坐著一個四十來歲的女人，穿著考究，妝容精緻，是教育部的特派專員周敏，出了名的刻薄。</p>
+<p>再旁邊，是幾所重點高校的招生官，一個個目光灼灼地盯著屏幕。</p>
+<p>“趙校長，”周敏開口，語氣淡淡的，“就算這個強化師等級夠高，但放在直播里排行第一，也有點不合適吧？”</p>
+<p>“打通了第四層的隊伍，又不是只有他們一個。”</p>
+<p>趙德柱笑了笑：“可是他們就是最快的啊，我把最快的投放到第一，有什麼問題？。</p>
+<p>“而且，我覺得他們確實不錯。”</p>
+<p>“不錯？”周敏挑眉，“一個強化師，兩個SS級，一個SSS級。這種配置，打不出這種成績才奇怪吧？”</p>
+<p>她頓了頓，聲音裡帶著一絲嘲諷：“趙指揮，你不會覺得這個強化師真的很厲害吧？依我看，不過是抱了隊友的大腿罷了。SSS級強化師，聽起來唬人，實際戰鬥能力能有多少？那幾個小姑娘，可都是實打實的SS級以上的戰鬥職業。”</p>
+<p>趙德柱沒說話，只是看著屏幕。</p>
+<p>屏幕上，吳恙四人已經清完了第四層的怪物，正在往第五層走。</p>
+<p>“抱大腿？”趙德柱忽然笑了，指著屏幕，“一刀15000傷害，被你稱作抱大腿，哈哈哈哈——”</p>
+<p>“拭目以待吧，我相信這個小傢伙，哪怕是強化師，也能帶來一點不一樣的東西。”</p>
+<p>趙德柱對吳恙頗有好感。</p>
+<p>怎麼說，吳恙都是從蓉城七中出來的，哪怕是個強化師，但那也是SSS級職業者啊！</p>
+<p>說不定這小子，可以打破強化師地位低下的格局？</p>
+<p>迷惘之塔，第五層。</p>
+<p>吳恙推開厚重的石門，眼前是一個巨大的圓形競技場。</p>
+<p>和前面幾層不同，這一層沒有成群結隊的怪物。</p>
+<p>只有一個。</p>
+<p>競技場正中央，一個高大的身影單膝跪地，雙手撐著一把巨劍。它渾身籠罩在黑色的霧氣中，鎧甲破碎，露出裡面半透明的靈體。</p>
+<p>【邪惡墮落的劍士之魂】</p>
+<p>【等級：20（BOSS）】</p>
+<p>【血量：400000】</p>
+<p>【技能：瞬斬、格擋、十字斬、躍遷斬】</p>
+<p>吳恙目光微凝。</p>
+<p>40萬血，比上次在副本里打的牛頭統領還多一倍。</p>
+<p>而且——劍士。</p>
+<p>拿劍的BOSS，通常意味著高攻速、高機動、高爆發。</p>
+<p>“小心。”他低聲道，“這個BOSS不好打。”</p>
+<p>羅泳琪也感知到了，臉色凝重：“它的精神抗性很高，我的幻術可能控不了太久。”</p>
+<p>“能控多久？”</p>
+<p>“還不清楚，預估的話應該只能3秒左右。”</p>
+<p>“夠了。”吳恙快速布置戰術，“泳琪先手控，雪雯接冰法，我輸出。愛莉看情況補奶——不，補血。”</p>
+<p>端木愛莉用力點頭：“明白！我會用力奶的！”</p>
+<p>吳恙嘴角一抽，總覺得這話哪裡不對。</p>
+<p>登錄用戶的「站內信」功能已經優化, 我們可以及時收到並回復您的訊息, 請到用戶中心 - 「站內信」 頁面查看!</p>
+<p>應廣大讀者的要求, 現推出VIP會員免廣告功能</p>
+<p>點擊查看</p>
+        </div>
+        <div class="nav">
+            <a href="33.html" id="prevBtn">上一章</a>
+            <a href="35.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('33.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('35.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>

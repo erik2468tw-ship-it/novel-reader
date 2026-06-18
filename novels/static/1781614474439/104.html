@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第104章 第104章 資源調配，控制</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第104章 第104章 資源調配，控制</h1>
+        <div class="chapter-content">
+            <p>鹿凝光是看著這些惡意滿滿的規則就能夠想象到那些隨便加入特區的人此刻心裡有多崩潰。</p>
+<p>包括此刻的她自己。</p>
+<p>毫無疑問，官方渠道的特區絕對是最安全的。</p>
+<p>而像她一樣隨便選擇的或者嚮往更自由區域而選擇的人此刻心裡肯定都不好受！</p>
+<p>一瞬間，整個藍星，大大小小的地方，每個人都發出了尖銳的爆鳴，罵聲接連不斷……</p>
+<p>無一不是來宣洩自己內心的恐懼。</p>
+<p>如果他們當初按照官方要求的進行選擇，是不是就不會出現這麼大的紕漏？</p>
+<p>鹿凝不由得陷入了沉默，他們的區服排名還算是挺靠前的，進了前百，只要穩住排名，不被後面的人拉住，而自己又穩居本區榜一，就不會威脅自己的性命……</p>
+<p>這個區域的人不能拖她後腿。</p>
+<p>鹿凝一時之間陷入了沉默……</p>
+<p>與之一樣陷入糾結的是各地官方……</p>
+<p>夏衛民在看到系統發布的這條信息后就感受到了滿滿的惡意！</p>
+<p>前幾個區全是他們大夏的精英，而後面又是他們的同胞。</p>
+<p>若顧前頭，肯定是顧不了後面，可顧後面的話，前面的人發展不起來又會被拖下水……</p>
+<p>一瞬之間，他都感覺頭髮又掉了好幾撮。</p>
+<p>徐老在一旁看得也是憂心忡忡，沒想到他們大夏泱泱子民會落得這般要互相殘殺的下場。</p>
+<p>蘇奈兒表情一臉嚴肅。</p>
+<p>腦子裡瘋狂的思索著對策。</p>
+<p>趙方剛最是沉不住氣，雖然他的年紀不小了，但他的武力值也是爆表的！</p>
+<p>“我就不信了！我大夏子民繁多，難不成還真怕了？兵有兵來打，無非就是些怪！以我們之力，難不成還托不起來？”</p>
+<p>邵少卿見自家老伴說著這些話，有些無奈的扶了扶額，隨後也堅定的站到了他的旁邊與他並肩。</p>
+<p>她雖然什麼都沒有說，但是明眼人都明白她想表達的意思。</p>
+<p>夏衛民無奈極了。</p>
+<p>有了這兩人打岔，原本還有些惶恐不安的情緒，瞬間就被壓了下去，眾人的情緒也慢慢的恢復了正常。</p>
+<p>“目前，大部分精英都集合在了我們這幾區，一定要穩住我們幾區的發展，適當的拉起其他區域，當務之急是要熬過一個月，四個天災接踵而至，若是不好好控制，造成死傷慘重。區服排名肯定會大跌。”</p>
+<p>“目前我們手頭的資源儘可能都正在頭部，讓頭部的盡量刷等級，讓他們把經驗往上提了，才有獲得更多資源的機會，屆時反哺回來才是最有效 。”</p>
+<p>夏衛民兩句話都說到了他們的心裡，也認可了他的這個安排，只不過，總有一些不服管教的。</p>
+<p>比如蘇雅帶來的青年……</p>
+<p>這傢伙自從覺醒后，整個人都神氣的不行，因為他的天賦是A級，每天可複製一個特殊裝備。</p>
+<p>出於對他天賦的需求，不少人都在看他眼色行事，儘可能的不惹惱他。</p>
+<p>優化了VIP會員的閱讀體驗, 點按屏幕中間即可呼喚出菜單, 可以很方便的「設定」、「上一頁」、「</p>
+<p>第104章 資源調配，控制蘇奈兒每次看見這個自以為是的傢伙都會很憤怒，但介於他的天賦不錯，她還是選擇忍住了自己的脾氣。</p>
+<p>此刻，莫雲霄正大喇喇的坐在了一個不該坐的位置，目光警惕的掃視著幾人，隨後露出了一個似笑非笑的表情。</p>
+<p>“你們做好決定了？”</p>
+<p>夏衛民沒有多說什麼，只是抬頭看向蘇奈兒……</p>
+<p>蘇奈兒臉色十分難看。</p>
+<p>然後咬牙切齒地從自己的背包裡面取出了她從彩虹寶箱開出來的裝備。</p>
+<p>【物品：鍛造錘（珍稀）】</p>
+<p>【介紹：鍛造師必備的鍛造錘使用該鎚子時，您的鍛造成果會提高30%】</p>
+<p>【時長：永久】</p>
+<p>鍛造錘一出現，原本還躺在椅子上一副弔兒郎當的莫雲霄瞬間就坐直了，眼睛直勾勾的盯著她手裡的鍛造錘，二話不說，直接伸手想要奪過去。</p>
+<p>蘇奈兒眼疾手快的避開了他這一動作。</p>
+<p>莫雲霄一臉不滿，冷冷的袪了他一眼。</p>
+<p>“我們只是請你幫忙複製，而不是送你。”</p>
+<p>蘇奈兒說完之後，直接甩出了她的技能，公平交易，上面清晰的羅列了雙方的交易內容。</p>
+<p>莫雲霄冷笑一聲。</p>
+<p>“你要我幫你複製的，可是一個永久裝備，就拿這點東西和我交易，你也拿得出手？”</p>
+<p>他說完之後直接就將東西甩在了地上，一副不願意搭理的模樣。</p>
+<p>蘇奈兒的怒氣已經忍到了極致，眼前的這個男人真的一點也不識相。</p>
+<p>正當她沒憋住，想要罵他兩句的時候，徐老上前按住了她的肩膀，目光沉著的盯著眼前的青年。</p>
+<p>“莫先生，您可不要忘了，您的經驗是怎麼提升起來的？現在你可不在蘇雅小姐的身邊，她派你過來是協助我們官方合作，而不是讓你來這裡當我們的大爺，如果您還想在這裡擺譜的話，自可離去！”</p>
+<p>此言一出，在場眾人皆是一愣。</p>
+<p>尤其是跟著莫雲霄一直挑釁官方的那幾個傢伙，更是臉色肉眼可見的變得慘白。</p>
+<p>他們的天賦能力雖然不算弱，但是這裡可是官方的領地，如果沒有官方的資源的話，對於他們來說，刷怪是相當有危險的……</p>
+<p>莫雲霄心裡忐忑不安，沒想到官方居然用這條道堵住了他，屬實是有些小人姿態。</p>
+<p>徐老見他臉色變得十分難看，又細心給他遞了個台階：</p>
+<p>“我知道你們不想要把事情鬧大，但你的天賦對於我們來說也就只是複製的作用，接下來的區域PK我們怕是沒多少時間管你們了……</p>
+<p>如果你們不想成為尾數被淘汰者，我相信你們應該知道要怎麼做，至於蘇雅那邊，我們會和她繼續交易，而你是她派過來這邊的，我們自然也會好生招待，但她的手現在伸不過來，後面的……應該也用不著我們多說太多吧。”</p>
+<p>威脅的意味滿滿的！</p>
+<p>莫雲霄直接被氣笑了，臉色十分難看的看向作壁上觀的夏衛民。</p>
+<p>這位大夏最高代表夏為民只是笑笑，沒有說話，彷彿認可了徐老的這個安排，一直當個旁觀者。</p>
+<p>兩人一唱一和的瞬間，將氣氛給壓到了最冰點！</p>
+<p>蘇奈兒在此刻也走了出來，什麼都沒說，直接將剛才拿出來的紙張放在了桌子上，直接問：“要簽嗎？”</p>
+<p>頁面右上角有「切換簡繁體」、 「調整字體大小」、「閱讀背景色」、「更換字體」 等功能</p>
+        </div>
+        <div class="nav">
+            <a href="103.html" id="prevBtn">上一章</a>
+            <a href="105.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('103.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('105.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>
