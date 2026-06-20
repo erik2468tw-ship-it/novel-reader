@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第7章 第7章 暴力法師</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
+            background: #f5f5f5; 
+            color: #333; 
+            line-height: 1.8;
+            padding: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1a1a1a; color: #e0e0e0; }
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .container { background: #2d2d2d; }
+        }
+        .chapter-title { 
+            font-size: 1.5em; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+        }
+        @media (prefers-color-scheme: dark) {
+            .chapter-title { border-bottom-color: #444; color: #e0e0e0; }
+        }
+        .chapter-content p { 
+            margin-bottom: 1em; 
+            text-indent: 2em;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        @media (prefers-color-scheme: dark) {
+            .nav { border-top-color: #444; }
+        }
+        .nav a {
+            padding: 10px 20px;
+            background: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .nav a:hover { background: #2980b9; }
+        .nav a.disabled { 
+            background: #ccc; 
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="chapter-title">第7章 第7章 暴力法師</h1>
+        <div class="chapter-content">
+            <p>二中的訓練場有籃球場般大小，呈現封閉式。</p>
+<p>對戰時候發揮自己的全部實力，無用顧忌，訓練場有保護檢測系統，老師也會緊緊看著。</p>
+<p>這節課之所以現在才有，是因為這一節課就要佔用一天時間。</p>
+<p>兩個月才會上一次課。</p>
+<p>上午是雙人組隊戰鬥，下午則是單人戰鬥。</p>
+<p>葉楓和韓毅是同桌，二人自然成了一組，而李慕白自然也就是和萬天樂一組。</p>
+<p>班級42人，總共21組。</p>
+<p>除了他們2組以外其他19組都是男女一對，他們那叫一個羨慕嫉妒啊。</p>
+<p>“沒事，在戰鬥裡面哥們可比女人靠譜！”</p>
+<p>韓毅握拳給自己打氣。</p>
+<p>葉楓麻了。</p>
+<p>你丫下次說這話的時候能不能隱藏一下你那看向其他隊伍羨慕嫉妒的眼神。</p>
+<p>分組完畢以後所有人都開始交流，孫瀾雪看了一眼自己班級的這些學生，然後就將目光主要放在了葉楓的身上。</p>
+<p>她想看看，葉楓現在的實力到底如何了，是不是已經達到了他們預定的五星。</p>
+<p>一個火系苗子，可千萬不能栽在她的手上啊。</p>
+<p>或許是因為過於著急想看見葉楓的實力，第一次切磋，孫瀾雪就安排1組和12組進行對戰。</p>
+<p>1組是班級裡面最優秀的兩個學生，開學兩個月就已經是初階六星。</p>
+<p>木系蘇欣雅，風系丘啟周。</p>
+<p>而12組毋庸置疑，還是韓毅和葉楓。</p>
+<p>“喲，咱們兩個運氣不錯呀，竟然和班花還有班草打。”</p>
+<p>韓毅摩拳擦掌，臉上笑意十足。</p>
+<p>“韓毅同學，賜教了。”</p>
+<p>丘啟周早就對這個看起來長相就兇悍的同學實力好奇了，他倒是想看看這個韓毅究竟有沒有表面看起來的這麼兇悍。</p>
+<p>兩個人火藥味十足，葉楓卻有些無聊的伸了一個懶腰。</p>
+<p>他的這個舉動卻遭到了蘇欣雅的不滿。</p>
+<p>“輕視我？狂妄之徒。”</p>
+<p>心中不屑，她才不相信兩個月前還是一星的傢伙就能追上她。</p>
+<p>初階五星以後每一顆都是成倍增加的難度。</p>
+<p>很多學生入學時候是五星，直到高中畢業都沒有突破成為中階法師。</p>
+<p>孫瀾雪見雙方氣氛已經到了劍拔弩張的時候便二話不說直接宣布戰鬥的開始。</p>
+<p>在戰鬥開始之前幾分鐘內，李慕白和萬天樂已經弄起了賭局。</p>
+<p>除去他們兩個以外其他同學全部壓12組兩個人會輸。</p>
+<p>他們以為這就是白撿錢，於是幾乎把所有零花錢全部壓在了賭局裡面。</p>
+<p>知道二人實力的兩人心中狂笑，一群傻叉，等一會有你們哭的。</p>
+<p>這樣撿錢的機會他們要是放棄可就太過意不去自己的那顆奸商心了呀。</p>
+<p>切磋開始的瞬間，韓毅就一聲大喝猛然向著丘啟周衝刺而去。</p>
+<p>事發突然，丘啟周急忙動用風力讓自己速度提升躲開了韓毅揮來的一拳。</p>
+<p>“這個傢伙交給我，那個娘們交給你！”</p>
+<p>“好嘞。”</p>
+<p>葉楓伸了一個懶腰，隨後化作一道火光沖向了蘇欣雅。</p>
+<p>蘇欣雅大驚，急忙召喚出木藤形成護盾。</p>
+<p>“給我破！”</p>
+<p>葉楓雙手被火焰附著一拳打出。</p>
+<p>本站新增了字體更換的功能, 點擊 「設置」 按鈕切換試試吧!</p>
+<p>第7章 暴力法師轟隆一聲，木藤護盾當場被打出了一個窟窿。</p>
+<p>與此同時的另外一邊，韓毅雙手不斷出現各種金屬飛刀然後扔向丘啟周。</p>
+<p>丘啟周因為不斷躲閃速度不由得慢了下來，而韓毅也看準時機，一把金屬棒球棍被他用魔法創造緊握在手。</p>
+<p>“吃我一棍！”</p>
+<p>棒球棍打在風牆上發出巨響，隨後就是咔嚓一聲，丘啟周當場就被棒球棍打中直接倒飛出去。</p>
+<p>好在孫瀾雪反應速度很快，接住了丘啟周，然後使用治癒系魔法幫丘啟周恢復了傷勢。</p>
+<p>韓毅這邊戰鬥結束，而葉楓的戰鬥還在繼續。</p>
+<p>蘇欣雅趕忙催動魔法，藤蔓不斷從地面冒出對葉楓進行攻擊。</p>
+<p>然而火拳狀態下的葉楓是一拳一個窟窿，打的蘇欣雅是連連後退。</p>
+<p>此時她整個人都懵了。</p>
+<p>這尼瑪是法師！</p>
+<p>火系法師不都是站在隊伍後面瘋狂輸出嗎，這位怎麼玩近身戰啊！</p>
+<p>不遠處的韓毅坐在地上，不知道從什麼地方掏出一包辣條正看的津津有味。</p>
+<p>很明顯他並沒有插手的意思。</p>
+<p>葉楓跳到半空，蘇欣雅感覺這是個好機會，身體四周五六根樹藤出現想要將半空的葉楓纏住。</p>
+<p>然而誰知道葉楓右腿這個時候卻被火焰覆蓋。</p>
+<p>這一招是他從山治那裡學到的！</p>
+<p>“惡魔風腳！”</p>
+<p>火焰瞬間將樹藤焚燒。</p>
+<p>耀眼的火紅此時已經在蘇欣雅視線當中閃耀。</p>
+<p>她還是第一次感覺自己距離死亡竟然這麼近。</p>
+<p>然而半空的葉楓卻突然收住了腳，落地以後說道：“看樣子好像是我贏了。”</p>
+<p>全場寂靜，隨後就是集體倒抽冷氣的聲音。</p>
+<p>這葉楓和韓毅純純就是兩個暴力狂啊。</p>
+<p>兩個法師的戰鬥打法，跟體師一樣，這兩個人怕不是魔鬼吧。</p>
+<p>而且，剛才葉楓用的是什麼魔法？</p>
+<p>初階火焰魔法裡面有這樣的近身攻擊魔法嗎？</p>
+<p>身為老師的孫瀾雪在看見這一幕都不由得在心中感嘆葉楓的天賦之高。</p>
+<p>如果她沒有猜錯，葉楓用的魔法實際上從始至終都只有一個。</p>
+<p>初階火系魔法，火焰覆蓋。</p>
+<p>這種通常都是用來對付突然近戰敵人用的一種防禦手段，就是讓自己身上出現火焰。</p>
+<p>但這樣的代價是很容易被火焰燒傷，而葉楓能做到根本受不到燒傷影響還能做出這麼多高難度動作。</p>
+<p>身體強度是一方面，另外一方面就是他對火焰的掌控。</p>
+<p>這掌控力恐怕已經達到中階水準了。</p>
+<p>想到這，孫瀾雪忍不住露出一抹微笑。</p>
+<p>果然，葉楓這個孩子天賦真的很高，只要努力一些就能碾壓很多普通學生。</p>
+<p>如果能一直努力下去，前途不可限量啊。</p>
+<p>還有那個韓毅也不差，這身體強度，不愧是那邊出來的人才。</p>
+<p>“哈哈哈！”</p>
+<p>孫瀾雪突然被一陣笑聲打斷，扭頭看去發現李慕白和萬天樂正在一邊數錢一邊發出大笑聲。</p>
+<p>平時他們四個都是粘在一起，形影不離。</p>
+<p>韓毅和葉楓表現不錯，他們兩個應該也差不多什麼地方去吧。</p>
+<p>“下一場，2組和11組進行對戰。”</p>
+<p>優化了VIP會員的閱讀體驗, 點按屏幕中間即可呼喚出菜單, 可以很方便的「設定」、「上一頁」、「</p>
+        </div>
+        <div class="nav">
+            <a href="6.html" id="prevBtn">上一章</a>
+            <a href="8.html" id="nextBtn">下一章</a>
+        </div>
+    </div>
+    <script>
+        // 根據是否存在上一章/下一章隱藏導航按鈕
+        fetch('6.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('prevBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('prevBtn').classList.add('disabled'));
+        fetch('8.html', { method: 'HEAD' })
+            .then(r => { if (!r.ok) document.getElementById('nextBtn').classList.add('disabled'); })
+            .catch(() => document.getElementById('nextBtn').classList.add('disabled'));
+    </script>
+</body>
+</html>
