@@ -194,6 +194,24 @@ function openTaskDeleteDialog(task) {
   taskPassword.value = ''
 }
 
+// 全部重新整理
+const refreshingAll = ref(false)
+
+async function refreshAllNovels() {
+  refreshingAll.value = true
+  loading.value = true
+  error.value = ''
+  try {
+    await api.refreshAllNovels()
+    await new Promise(r => setTimeout(r, 3000))
+    await loadNovels()
+  } catch (e) {
+    error.value = '全部重新整理失敗：' + e.message
+  }
+  loading.value = false
+  refreshingAll.value = false
+}
+
 // 初始載入 Worker 狀態
 loadWorkerStatus()
 
@@ -377,6 +395,9 @@ watch(currentChapter, (chapter) => {
       <h1 v-else>第{{ currentChapter?.chapter_number }}章</h1>
       <div class="header-actions">
         <button v-if="currentView === 'home'" @click="showTasksDialog = true; loadTasks()" class="tasks-btn ripple" title="任務管理">📋</button>
+        <button v-if="currentView === 'home'" @click="refreshAllNovels" class="refresh-all-btn ripple" :disabled="refreshingAll" :title="refreshingAll ? '重新整理中...' : '全部重新整理'">
+          {{ refreshingAll ? '🔄 重新整理中...' : '🔄 全部重新整理' }}
+        </button>
         <button v-if="currentView === 'home'" @click="showAddDialog = true" class="add-btn ripple">+ 新增</button>
         <button @click="toggleWorker" class="worker-btn ripple" :class="{ active: workerEnabled }" :title="workerEnabled ? '爬蟲運行中' : '爬蟲已停止'">
           {{ workerEnabled ? '🟢' : '🔴' }}
@@ -1334,6 +1355,26 @@ body {
   box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
 }
 .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.refresh-all-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  background: #ff9800;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+  transition: all 0.2s;
+}
+.refresh-all-btn:hover:not(:disabled) {
+  background: #f57c00;
+  transform: translateY(-2px);
+}
+.refresh-all-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 
 .delete-btn {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);

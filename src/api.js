@@ -83,6 +83,14 @@ export const api = {
     return res.json()
   },
 
+  // 全部重新整理（所有小說）
+  async refreshAllNovels() {
+    const res = await fetch(`${API_BASE}/api/scrape/refresh-all`, {
+      method: 'POST'
+    })
+    return res.json()
+  },
+
   // 取得小說詳細資訊
   async getNovelInfo(id) {
     const res = await fetch(`${API_BASE}/api/novels/${id}/info`)

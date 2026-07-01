@@ -481,6 +481,26 @@ app.post('/api/scrape/:id/refresh', async (req, res) => {
     }
 });
 
+// 全部重新整理（所有小說）
+app.post('/api/scrape/refresh-all', async (req, res) => {
+    try {
+        const novels = getNovelList();
+        if (!novels || novels.length === 0) return res.json({ success: true, message: '沒有小說' });
+        
+        novels.forEach(novel => {
+            updateNovelStatus(novel.novelId, 'pending');
+        });
+        res.json({ success: true, message: `已觸發 ${novels.length} 本小說重新整理` });
+        
+        // 背景執行（排隊）
+        novels.forEach(novel => {
+            setTimeout(() => refreshNovel(novel), 1000);
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============= Scraper Worker =============
 function log(msg) {
     console.log(`[${new Date().toISOString()}] [Worker] ${msg}`);
